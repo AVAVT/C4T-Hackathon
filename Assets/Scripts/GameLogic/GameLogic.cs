@@ -1,78 +1,182 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Threading.Tasks;
+using System;
 
 public class GameLogic
 {
-  ServerGameState serverGameState;
-  // ICharacterController redPlanterAI;
-  // ICharacterController redHarvesterAI;
-  // ICharacterController redWormAI;
-  // ICharacterController bluePlanterAI;
-  // ICharacterController blueHarvesterAI;
-  // ICharacterController blueWormAI;
-
+  public ServerGameState ServerGameState { get; private set; }
   List<ICharacterController> controllers = new List<ICharacterController>();
-  public GameLogic(
-    ICharacterController redPlanterAI,
-    ICharacterController redHarvesterAI,
-    ICharacterController redWormAI,
-    ICharacterController bluePlanterAI,
-    ICharacterController blueHarvesterAI,
-    ICharacterController blueWormAI
+
+  /// <param name="replayGameState">Initial game state of a replay. Leave null to play new game.</param>
+  public GameLogic(ServerGameState replayGameState = null)
+  {
+    if (replayGameState == null)
+    {
+      ServerGameState = new ServerGameState();
+
+      InitializeCharacters(ServerGameState);
+      InitializeMap(ServerGameState);
+    }
+    else ServerGameState = replayGameState;
+  }
+
+  /// <summary>Play a game from beginning to end</summary>
+  /// <param name="recorder">The recorder used to log replay</param>
+  public async Task StartGame(
+    ICharacterController redPlanterController,
+    ICharacterController redHarvesterController,
+    ICharacterController redWormController,
+    ICharacterController bluePlanterController,
+    ICharacterController blueHarvesterController,
+    ICharacterController blueWormController,
+    IReplayRecorder recorder = null
   )
   {
-    // this.redPlanterAI = redPlanterAI;
-    // this.redHarvesterAI = redHarvesterAI;
-    // this.redWormAI = redWormAI;
-    // this.bluePlanterAI = bluePlanterAI;
-    // this.blueHarvesterAI = blueHarvesterAI;
-    // this.blueWormAI = blueWormAI;
+    recorder?.LogGameState(ServerGameState);
 
-    controllers.Add(redPlanterAI);
-    controllers.Add(redHarvesterAI);
-    controllers.Add(redWormAI);
-    controllers.Add(bluePlanterAI);
-    controllers.Add(blueHarvesterAI);
-    controllers.Add(blueWormAI);
+    controllers.Add(redPlanterController);
+    controllers.Add(redHarvesterController);
+    controllers.Add(redWormController);
+    controllers.Add(bluePlanterController);
+    controllers.Add(blueHarvesterController);
+    controllers.Add(blueWormController);
 
-    serverGameState = new ServerGameState();
+    StartGameForTeam(
+      ServerGameState.GameStateForTeam(Team.Red),
+      redPlanterController,
+      redHarvesterController,
+      redWormController
+    );
 
-    InitializeCharacters(serverGameState);
-    InitializeMap(serverGameState);
-    DoStart();
+    StartGameForTeam(
+      ServerGameState.GameStateForTeam(Team.Blue),
+      bluePlanterController,
+      blueHarvesterController,
+      blueWormController
+    );
+
+    while (ServerGameState.turn < GameConfigs.GAME_LENGTH)
+    {
+      await PlayNextTurn(recorder);
+    }
+
+    DoEnd(recorder);
   }
 
-  void DoStart()
+  void StartGameForTeam(GameState gameState, ICharacterController planterController, ICharacterController harvesterController, ICharacterController wormController)
   {
-    foreach (var controller in controllers) controller.DoStart(serverGameState.GameStateForTeam(controller.Character.team));
-    DoTurn();
+    foreach (var character in gameState.allies)
+    {
+      ICharacterController controller = null;
+      if (character.characterRole == CharacterRole.Planter) controller = planterController;
+      else if (character.characterRole == CharacterRole.Harvester) controller = harvesterController;
+      else if (character.characterRole == CharacterRole.Worm) controller = wormController;
+      else throw new System.Exception($"Unknown role {character.characterRole}!");
+
+      StartGameForCharacter(gameState, controller, character);
+    }
   }
 
-  void DoTurn()
+  void StartGameForCharacter(GameState gameState, ICharacterController controller, Character character)
   {
-    serverGameState.turn++;
-
-    // TODO Turn shits here
-
-    if (serverGameState.turn < GameConfigs.GAME_LENGTH) DoTurn();
-    else DoEnd();
+    controller.Character = character;
+    controller.DoStart(gameState);
   }
 
-  void DoEnd()
+  async Task PlayNextTurn(IReplayRecorder recorder)
   {
-    // TODO
+    var redTeamGameState = ServerGameState.GameStateForTeam(Team.Red);
+    var blueTeamGameState = ServerGameState.GameStateForTeam(Team.Blue);
+    List<TurnAction> actions = new List<TurnAction>();
+
+    foreach (var controller in controllers)
+    {
+      var result = await controller.DoTurn(
+        controller.Character.team == Team.Red ? redTeamGameState : blueTeamGameState
+      );
+      actions.Add(new TurnAction(
+        controller.Character.team,
+        controller.Character.characterRole,
+        result,
+        controller.IsTimedOut,
+        controller.IsCrashed
+      ));
+    }
+
+    ExecuteTurn(actions);
+    recorder?.LogTurn(actions);
+  }
+
+  /// <summary>Progress the game state with given actions</summary>
+  public void ExecuteTurn(List<TurnAction> actions)
+  {
+    DoMove(actions);
+    // TODO Planter catch Worm
+    // TODO Worm scares Harvester
+    // TODO Worm destroy Plant
+    // TODO Planter plant
+    // TODO Harvester harvest
+    // TODO Harvester score
+    // TODO Plants and Wildberries inc growState
+    ServerGameState.turn++;
+  }
+
+  void DoEnd(IReplayRecorder recorder)
+  {
+    recorder?.LogEndGame(ServerGameState);
+  }
+
+  void DoMove(List<TurnAction> actions)
+  {
+    Dictionary<Team, Dictionary<CharacterRole, Character>> targetPoses = new Dictionary<Team, Dictionary<CharacterRole, Character>>();
+    foreach (var action in actions)
+    {
+      var character = ServerGameState.characters[action.team][action.role];
+      var newPos = new Vector2(character.x, character.y) + action.direction.ToDirectionVector();
+      character.x = Math.Max(Math.Min((int)newPos.X, GameConfigs.MAP_WIDTH - 1), 0);
+      character.y = Math.Max(Math.Min((int)newPos.Y, GameConfigs.MAP_HEIGHT - 1), 0);
+      targetPoses[action.team][action.role] = character;
+    }
+
+    // Cancel movement on counter roles swaping places
+    if (AreSwapingPlaces(targetPoses, Team.Red, CharacterRole.Worm, Team.Blue, CharacterRole.Planter))
+    {
+      targetPoses[Team.Red][CharacterRole.Worm] = ServerGameState.characters[Team.Red][CharacterRole.Worm];
+    }
+    else if (AreSwapingPlaces(targetPoses, Team.Red, CharacterRole.Worm, Team.Blue, CharacterRole.Harvester))
+    {
+      targetPoses[Team.Blue][CharacterRole.Harvester] = ServerGameState.characters[Team.Blue][CharacterRole.Harvester];
+    }
+
+    if (AreSwapingPlaces(targetPoses, Team.Blue, CharacterRole.Worm, Team.Red, CharacterRole.Planter))
+    {
+      targetPoses[Team.Blue][CharacterRole.Worm] = ServerGameState.characters[Team.Blue][CharacterRole.Worm];
+    }
+    else if (AreSwapingPlaces(targetPoses, Team.Blue, CharacterRole.Worm, Team.Red, CharacterRole.Harvester))
+    {
+      targetPoses[Team.Red][CharacterRole.Harvester] = ServerGameState.characters[Team.Red][CharacterRole.Harvester];
+    }
+
+    ServerGameState.characters = targetPoses;
+  }
+
+  bool AreSwapingPlaces(Dictionary<Team, Dictionary<CharacterRole, Character>> targetPoses, Team char1Team, CharacterRole char1Role, Team char2Team, CharacterRole char2Role)
+  {
+    return targetPoses[char1Team][char1Role].DistanceTo(ServerGameState.characters[char2Team][char2Role]) == 0
+          && targetPoses[char2Team][char2Role].DistanceTo(ServerGameState.characters[char1Team][char1Role]) == 0;
   }
 
   ServerGameState InitializeCharacters(ServerGameState gameState)
   {
-    InitializeTeam(Team.Red, gameState.teamRed, GameConfigs.RED_STARTING_POSES, 0);
-    InitializeTeam(Team.Blue, gameState.teamBlue, GameConfigs.BLUE_STARTING_POSES, 3);
+    InitializeTeam(Team.Red, gameState, GameConfigs.RED_STARTING_POSES);
+    InitializeTeam(Team.Blue, gameState, GameConfigs.BLUE_STARTING_POSES);
 
     return gameState;
   }
 
-  void InitializeTeam(Team team, List<Character> teamList, List<Vector2> startingPoses, int controllerIndexInc)
+  void InitializeTeam(Team team, ServerGameState gameState, List<Vector2> startingPoses)
   {
     for (int i = 0; i < 3; i++)
     {
@@ -83,8 +187,7 @@ public class GameLogic
           team,
           (CharacterRole)i
         );
-      teamList.Add(character);
-      controllers[i + controllerIndexInc].Character = character;
+      gameState.characters[team][(CharacterRole)i] = character;
     }
   }
 

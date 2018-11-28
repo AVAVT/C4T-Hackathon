@@ -2,20 +2,19 @@ using System.Collections.Generic;
 
 public class ServerGameState
 {
-  public int turn = 0;
+  public int turn = 1;
   public int redScore = 0;
   public int blueScore = 0;
-  public List<Character> teamRed = new List<Character>();
-  public List<Character> teamBlue = new List<Character>();
+  public int mapWidth = GameConfigs.MAP_WIDTH;
+  public int mapHeight = GameConfigs.MAP_HEIGHT;
+  public Dictionary<Team, Dictionary<CharacterRole, Character>> characters = new Dictionary<Team, Dictionary<CharacterRole, Character>>();
   public List<List<Tile>> map = new List<List<Tile>>();
-
   public GameState GameStateForTeam(Team team)
   {
     var result = new GameState(turn, team);
 
-    result.allies = new List<Character>(team == Team.Red ? teamRed : teamBlue);
-    var enemies = (team == Team.Red ? teamBlue : teamRed);
-    foreach (var enemy in enemies)
+    result.allies.AddRange(characters[team].Values);
+    foreach (var enemy in characters[(Team)(1 - team)].Values)
     {
       foreach (var ally in result.allies)
       {
