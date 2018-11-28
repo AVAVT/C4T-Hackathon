@@ -1,0 +1,4 @@
+<linker>
+  <assembly fullname="System" preserve="all"/>
+  <assembly fullname="Microsoft" preserve="all"/>
+</linker>
