@@ -5,6 +5,7 @@ using UnityEngine;
 public class GameManager : MonoBehaviour {
 	public LogicManager logicManager;
 	public PythonManager pythonManager;
+	public UIManager uIManager;
 
 	void Awake()
 	{
@@ -14,5 +15,6 @@ public class GameManager : MonoBehaviour {
 	void BindManagers()
 	{
 		logicManager.pythonManager = this.pythonManager;
+		pythonManager.textOutputManager = this.uIManager;
 	}
 }
