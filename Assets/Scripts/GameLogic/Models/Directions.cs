@@ -1,4 +1,4 @@
-using UnityEngine;
+using System.Numerics;
 
 public class Directions
 {
@@ -11,15 +11,15 @@ public class Directions
 
 public static class DirectionStringExtension
 {
-  public static Vector2Int ToDirectionVector(this string direction)
+  public static Vector2 ToDirectionVector(this string direction)
   {
     switch (direction)
     {
-      case Directions.UP: return Vector2Int.up;
-      case Directions.DOWN: return Vector2Int.down;
-      case Directions.LEFT: return Vector2Int.left;
-      case Directions.RIGHT: return Vector2Int.right;
-      case Directions.STAY: return Vector2Int.zero;
+      case Directions.UP: return new Vector2(0, -1);
+      case Directions.DOWN: return new Vector2(0, 1);
+      case Directions.LEFT: return new Vector2(-1, 0);
+      case Directions.RIGHT: return new Vector2(1, 0);
+      case Directions.STAY: return Vector2.Zero;
       default: throw new System.Exception($"String '{direction}' is not a valid direction!");
     }
   }

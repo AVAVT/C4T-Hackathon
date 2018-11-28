@@ -5,12 +5,12 @@ public struct Character
   public int x;
   public int y;
   public Team team;
-  public CharacterClass characterClass;
+  public CharacterRole characterRole;
   public int harvest;
 
-  public Character(int x, int y, Team team, CharacterClass characterClass)
+  public Character(int x, int y, Team team, CharacterRole characterRole)
   {
-    this.characterClass = characterClass;
+    this.characterRole = characterRole;
     this.x = x;
     this.y = y;
     this.team = team;
@@ -28,7 +28,7 @@ public struct Character
   }
 }
 
-public enum CharacterClass : int
+public enum CharacterRole : int
 {
   Planter = 0,
   Harvester = 1,

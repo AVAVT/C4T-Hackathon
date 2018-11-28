@@ -37,20 +37,21 @@ public struct Tile
   {
     return tile.x != (int)pos.X || tile.y != (int)pos.Y;
   }
+
+  public static bool operator ==(Tile tile, Tile tile2)
+  {
+    return tile.x == (int)tile2.x && tile.y == (int)tile2.y;
+  }
+  public static bool operator !=(Tile tile, Tile tile2)
+  {
+    return tile.x != (int)tile2.x || tile.y != (int)tile2.y;
+  }
   public override bool Equals(object obj)
   {
     if (obj is Tile)
-    {
-      var other = (Tile)obj;
-      return (
-        x == other.x
-        && y == other.y
-      );
-    }
+      return this == (Tile)obj;
     else if (obj is Vector2)
-    {
       return this == (Vector2)obj;
-    }
     else return false;
   }
 

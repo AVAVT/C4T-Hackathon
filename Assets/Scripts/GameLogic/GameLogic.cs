@@ -1,20 +1,52 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 
 public class GameLogic
 {
   ServerGameState serverGameState;
-  public GameLogic()
+  // ICharacterController redPlanterAI;
+  // ICharacterController redHarvesterAI;
+  // ICharacterController redWormAI;
+  // ICharacterController bluePlanterAI;
+  // ICharacterController blueHarvesterAI;
+  // ICharacterController blueWormAI;
+
+  List<ICharacterController> controllers = new List<ICharacterController>();
+  public GameLogic(
+    ICharacterController redPlanterAI,
+    ICharacterController redHarvesterAI,
+    ICharacterController redWormAI,
+    ICharacterController bluePlanterAI,
+    ICharacterController blueHarvesterAI,
+    ICharacterController blueWormAI
+  )
   {
+    // this.redPlanterAI = redPlanterAI;
+    // this.redHarvesterAI = redHarvesterAI;
+    // this.redWormAI = redWormAI;
+    // this.bluePlanterAI = bluePlanterAI;
+    // this.blueHarvesterAI = blueHarvesterAI;
+    // this.blueWormAI = blueWormAI;
+
+    controllers.Add(redPlanterAI);
+    controllers.Add(redHarvesterAI);
+    controllers.Add(redWormAI);
+    controllers.Add(bluePlanterAI);
+    controllers.Add(blueHarvesterAI);
+    controllers.Add(blueWormAI);
+
     serverGameState = new ServerGameState();
+
     InitializeCharacters(serverGameState);
     InitializeMap(serverGameState);
+    DoStart();
   }
 
   void DoStart()
   {
-    // TODO Start shits here
-
+    foreach (var controller in controllers) controller.DoStart(serverGameState.GameStateForTeam(controller.Character.team));
+    DoTurn();
   }
 
   void DoTurn()
@@ -27,49 +59,33 @@ public class GameLogic
     else DoEnd();
   }
 
-  void DoEnd() { }
+  void DoEnd()
+  {
+    // TODO
+  }
 
   ServerGameState InitializeCharacters(ServerGameState gameState)
   {
-    gameState.teamRed.Add(new Character(
-      (int)GameConfigs.RED_BOX_POS.X,
-      (int)GameConfigs.RED_BOX_POS.Y,
-      Team.Red,
-      CharacterClass.Planter
-    ));
-    gameState.teamRed.Add(new Character(
-      (int)GameConfigs.RED_BOX_POS.X,
-      (int)GameConfigs.RED_BOX_POS.Y,
-      Team.Red,
-      CharacterClass.Harvester
-    ));
-    gameState.teamRed.Add(new Character(
-      (int)GameConfigs.RED_ROCK_POS.X,
-      (int)GameConfigs.RED_ROCK_POS.Y,
-      Team.Red,
-      CharacterClass.Worm
-    ));
-
-    gameState.teamBlue.Add(new Character(
-      (int)GameConfigs.BLUE_BOX_POS.X,
-      (int)GameConfigs.BLUE_BOX_POS.Y,
-      Team.Blue,
-      CharacterClass.Planter
-    ));
-    gameState.teamBlue.Add(new Character(
-      (int)GameConfigs.BLUE_BOX_POS.X,
-      (int)GameConfigs.BLUE_BOX_POS.Y,
-      Team.Blue,
-      CharacterClass.Harvester
-    ));
-    gameState.teamBlue.Add(new Character(
-      (int)GameConfigs.BLUE_ROCK_POS.X,
-      (int)GameConfigs.BLUE_ROCK_POS.Y,
-      Team.Blue,
-      CharacterClass.Worm
-    ));
+    InitializeTeam(Team.Red, gameState.teamRed, GameConfigs.RED_STARTING_POSES, 0);
+    InitializeTeam(Team.Blue, gameState.teamBlue, GameConfigs.BLUE_STARTING_POSES, 3);
 
     return gameState;
+  }
+
+  void InitializeTeam(Team team, List<Character> teamList, List<Vector2> startingPoses, int controllerIndexInc)
+  {
+    for (int i = 0; i < 3; i++)
+    {
+      var pos = startingPoses[i];
+      var character = new Character(
+          (int)pos.X,
+          (int)pos.Y,
+          team,
+          (CharacterRole)i
+        );
+      teamList.Add(character);
+      controllers[i + controllerIndexInc].Character = character;
+    }
   }
 
   ServerGameState InitializeMap(ServerGameState gameState)
