@@ -12,14 +12,59 @@ public class ServerGameState
   public GameState GameStateForTeam(Team team)
   {
     var result = new GameState(turn, team);
-    var candiateEnemies = new List<Character>(team == Team.Red ? teamBlue : teamRed);
+
     result.allies = new List<Character>(team == Team.Red ? teamRed : teamBlue);
-
-    foreach (var character in result.allies)
+    var enemies = (team == Team.Red ? teamBlue : teamRed);
+    foreach (var enemy in enemies)
     {
-      foreach (var candidate in candiateEnemies)
+      foreach (var ally in result.allies)
       {
+        if (enemy.DistanceTo(ally) <= GameConfigs.SIGHT_DISTANCE)
+        {
+          result.enemies.Add(enemy);
+          break;
+        }
+      }
+    }
 
+    foreach (var row in map)
+    {
+      var teamRow = new List<Tile>();
+      result.map.Add(teamRow);
+      foreach (var tile in row)
+      {
+        var teamTile = new Tile(tile.x, tile.y);
+
+        if (tile.alwaysVisible)
+        {
+          teamTile.type = tile.type;
+          teamTile.growState = tile.growState;
+        }
+        else
+        {
+          bool visible = false;
+          foreach (var ally in result.allies)
+          {
+            if (ally.DistanceTo(teamTile) <= GameConfigs.SIGHT_DISTANCE)
+            {
+              visible = true;
+              break;
+            }
+          }
+
+          if (visible)
+          {
+            teamTile.type = tile.type;
+            teamTile.growState = tile.growState;
+          }
+          else
+          {
+            teamTile.type = TileType.UNKNOWN;
+            teamTile.growState = 0;
+          }
+        }
+
+        teamRow.Add(teamTile);
       }
     }
 
