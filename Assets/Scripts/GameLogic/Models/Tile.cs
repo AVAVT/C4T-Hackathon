@@ -1,11 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Tile
+public struct Tile
 {
   public Vector2Int position;
-  public TileType type = TileType.UNKNOWN;
-  public int growState = 0;
+  public TileType type;
+  public int growState;
 
   public Tile(int x, int y)
   {
@@ -22,5 +22,9 @@ public enum TileType
   EMPTY = 2,
   WILDBERRY = 3,
   TOMATO = 4,
-  PUMPKIN = 5
+  PUMPKIN = 5,
+  RED_BOX = 6,
+  BLUE_BOX = 7,
+  RED_ROCK = 8,
+  BLUE_ROCK = 9
 }
