@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
-public class UIManager: MonoBehaviour,ITextOutput
+public class UIManager: MonoBehaviour,IOutputUI
 {
   public InputField farmer1Input,collector1Input,worm1Input,farmer2Input,collector2Input,worm2Input;
   public Text farmer1Path,collector1Path,worm1Path,farmer2Path,collector2Path,worm2Path;

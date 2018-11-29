@@ -1,3 +1,4 @@
-class pythonScriptClass:
+class farmer:
     def getAction(self,text):
-        return text
+        return self;
+

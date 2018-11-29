@@ -1,6 +1,6 @@
 using System;
 
-public interface ITextOutput
+public interface IOutputUI
 {
   void ShowOutputText(string text);
   void ShowPathByIndex(int index, string path);
