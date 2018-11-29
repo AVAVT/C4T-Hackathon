@@ -10,8 +10,9 @@ public class RecordManager : IReplayRecorder
 
   public void LogGameState(ServerGameState serverGameState)
   {
-    Debug.Log("Recorded!");
+    Debug.Log("Start game!!!");
   }
+
 
   public void LogTurn(List<TurnAction> actions)
   {

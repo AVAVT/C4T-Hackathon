@@ -1,4 +1,5 @@
 using System;
+using System.Numerics;
 
 [System.Serializable]
 public struct Character
@@ -8,6 +9,7 @@ public struct Character
   public Team team;
   public CharacterRole characterRole;
   public int harvest;
+  public bool isScared;
 
   public Character(int x, int y, Team team, CharacterRole characterRole)
   {
@@ -16,6 +18,7 @@ public struct Character
     this.y = y;
     this.team = team;
     this.harvest = 0;
+    this.isScared= false;
   }
 
   public int DistanceTo(Character character)
@@ -29,6 +32,7 @@ public struct Character
   }
 }
 
+[System.Serializable]
 public enum CharacterRole : int
 {
   Planter = 0,

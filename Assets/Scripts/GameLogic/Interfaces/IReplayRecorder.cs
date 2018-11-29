@@ -7,6 +7,7 @@ public interface IReplayRecorder
   void LogEndGame(ServerGameState serverGameState);
 }
 
+[System.Serializable]
 public struct TurnAction
 {
   public Team team;

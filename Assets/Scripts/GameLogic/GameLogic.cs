@@ -114,14 +114,13 @@ public class GameLogic
   public void ExecuteTurn(List<TurnAction> actions)
   {
     DoMove(actions);
-    DoCatchWorm(actions);
-    // TODO Planter catch Worm
-    // TODO Worm scares Harvester
-    // TODO Worm destroy Plant
-    // TODO Planter plant
-    // TODO Harvester harvest
-    // TODO Harvester score
-    // TODO Plants and Wildberries inc growState
+    DoCatchWorm(ServerGameState);
+    DoScareHarvester(ServerGameState);
+    DoPlantTree(ServerGameState);
+    DoGetPoint(ServerGameState);
+    DoGetPoint(ServerGameState);
+    DoGrowPlant(ServerGameState);
+
     ServerGameState.turn++;
   }
 
@@ -129,6 +128,113 @@ public class GameLogic
   {
     recorder?.LogEndGame(ServerGameState);
   }
+  void DoGrowPlant(ServerGameState serverGameState)
+  {
+    for (int row = 0; row < serverGameState.mapHeight; row++)
+    {
+      for (int col = 0; col < serverGameState.mapWidth; col++)
+      {
+        var tile = serverGameState.map[row][col];
+        if ((tile.type == TileType.WILDBERRY
+        || tile.type == TileType.PUMPKIN
+        || tile.type == TileType.TOMATO)
+        && tile.growState < 5)
+          tile.growState++;
+      }
+    }
+  }
+  void DoGetPoint(ServerGameState serverGameState)
+  {
+    for (int i = 0; i < 2; i++)
+    {
+      var character = serverGameState.characters[(Team)i][CharacterRole.Harvester];
+      var currentTile = serverGameState.map[character.x][character.y];
+      var allyTileType = i == 0 ? TileType.RED_BOX : TileType.BLUE_BOX;
+      if (currentTile.type == allyTileType)
+      {
+        if (i == 0) serverGameState.redScore += character.harvest;
+        else serverGameState.blueScore += character.harvest;
+        character.harvest = 0;
+      }
+    }
+  }
+  void DoHarvest(ServerGameState serverGameState)
+  {
+    for (int i = 0; i < 2; i++)
+    {
+      var character = serverGameState.characters[(Team)i][CharacterRole.Harvester];
+      var currentTile = serverGameState.map[character.x][character.y];
+      var allyTileType = i == 0 ? TileType.TOMATO : TileType.PUMPKIN;
+      if ((currentTile.type == allyTileType || currentTile.type == TileType.WILDBERRY)
+      && currentTile.growState == 5)
+      {
+        currentTile.growState = 1;
+        character.harvest++;
+      }
+    }
+  }
+  void DoPlantTree(ServerGameState serverGameState)
+  {
+    for (int i = 0; i < 2; i++)
+    {
+      var character = serverGameState.characters[(Team)i][CharacterRole.Planter];
+      var currentTile = serverGameState.map[character.x][character.y];
+      if (currentTile.type == TileType.EMPTY)
+      {
+        currentTile.type = i == 0 ? TileType.TOMATO : TileType.PUMPKIN;
+        currentTile.growState++;
+      }
+    }
+  }
+  void DoDestroyPlant(ServerGameState serverGameState)
+  {
+    for (int i = 0; i < 2; i++)
+    {
+      var character = serverGameState.characters[(Team)i][CharacterRole.Worm];
+      var currentTile = serverGameState.map[character.x][character.y];
+      var oppositeTileType = i == 0 ? TileType.PUMPKIN : TileType.TOMATO;
+      if (currentTile.type == oppositeTileType)
+      {
+        currentTile.type = TileType.EMPTY;
+        currentTile.growState = 0;
+      }
+    }
+  }
+  void DoScareHarvester(ServerGameState serverGameState)
+  {
+    for (int i = 0; i < 2; i++)
+    {
+      for (int j = 0; j < 2; j++)
+      {
+        if (serverGameState.characters[(Team)i][CharacterRole.Worm].DistanceTo(serverGameState.characters[(Team)j][CharacterRole.Harvester]) == 0
+        && i != j)
+        {
+          var character = serverGameState.characters[(Team)j][CharacterRole.Harvester];
+          character.isScared = true;
+          serverGameState.characters[(Team)j][CharacterRole.Harvester] = character;
+        }
+      }
+    }
+  }
+  void DoCatchWorm(ServerGameState serverGameState)
+  {
+    for (int i = 0; i < 2; i++)
+    {
+      for (int j = 0; j < 2; j++)
+      {
+        if (serverGameState.characters[(Team)i][CharacterRole.Planter].DistanceTo(serverGameState.characters[(Team)j][CharacterRole.Worm]) == 0
+        && i != j)
+        {
+          var character = serverGameState.characters[(Team)j][CharacterRole.Worm];
+          var rockPos = j == 0 ? GameConfigs.RED_ROCK_POS : GameConfigs.BLUE_ROCK_POS;
+          character.x = (int)rockPos.X;
+          character.y = (int)rockPos.Y;
+          serverGameState.characters[(Team)j][CharacterRole.Worm] = character;
+        }
+      }
+    }
+  }
+
 
   void DoMove(List<TurnAction> actions)
   {
@@ -136,10 +242,17 @@ public class GameLogic
     foreach (var action in actions)
     {
       var character = ServerGameState.characters[action.team][action.role];
-      var newPos = new Vector2(character.x, character.y) + action.direction.ToDirectionVector();
+      var newPos = new Vector2(character.x, character.y);
+      if (!character.isScared)
+        newPos += action.direction.ToDirectionVector();
+      else
+        character.isScared = false;
+        
       character.x = Math.Max(Math.Min((int)newPos.X, GameConfigs.MAP_WIDTH - 1), 0);
       character.y = Math.Max(Math.Min((int)newPos.Y, GameConfigs.MAP_HEIGHT - 1), 0);
-      targetPoses[action.team][action.role] = character;
+
+      if(!IsInImpassableTile(ServerGameState, character))
+        targetPoses[action.team][action.role] = character;
     }
 
     // Cancel movement on counter roles swaping places
@@ -170,6 +283,11 @@ public class GameLogic
           && targetPoses[char2Team][char2Role].DistanceTo(ServerGameState.characters[char1Team][char1Role]) == 0;
   }
 
+  bool IsInImpassableTile(ServerGameState serverGameState, Character character)
+  {
+    return character.DistanceTo(serverGameState.map[character.x][character.y]) == 0 && serverGameState.map[character.x][character.y].type == TileType.IMPASSABLE;
+  }
+
   ServerGameState InitializeCharacters(ServerGameState gameState)
   {
     InitializeTeam(Team.Red, gameState, GameConfigs.RED_STARTING_POSES);
@@ -190,7 +308,7 @@ public class GameLogic
           team,
           (CharacterRole)i
         );
-      gameState.characters[team].Add((CharacterRole)i, character);  
+      gameState.characters[team].Add((CharacterRole)i, character);
       // gameState.characters[team][(CharacterRole)i] = character;
     }
   }

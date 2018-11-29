@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Scripting.Hosting;
 using UnityEngine;
 
-public class AICharacter : ICharacterController
+public class PythonAICharacter : ICharacterController
 {
   private bool isTimedOut = false;
   private bool isCrashed = false;
@@ -31,7 +31,7 @@ public class AICharacter : ICharacterController
       return isCrashed;
     }
   }
-  public AICharacter(ScriptEngine engine, ScriptSource source, ScriptScope scope)
+  public PythonAICharacter(ScriptEngine engine, ScriptSource source, ScriptScope scope)
   {
     this.engine = engine;
     this.source = source;

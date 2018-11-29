@@ -24,7 +24,7 @@ public class PythonManager : MonoBehaviour, IPythonInterpreter
 
   //Iron Python
   private ScriptEngine engine;
-  List<AICharacter> characters = new List<AICharacter>();
+  List<ICharacterController> characters = new List<ICharacterController>();
   private string[] paths;
 
   void Awake()
@@ -138,7 +138,7 @@ public class PythonManager : MonoBehaviour, IPythonInterpreter
       {
         var source = engine.CreateScriptSourceFromFile(paths[i]);
         var scope = engine.CreateScope();
-        AICharacter character = new AICharacter(engine, source, scope);
+        PythonAICharacter character = new PythonAICharacter(engine, source, scope);
         characters.Add(character);
         character.Character = new Character();
 
