@@ -1,5 +1,6 @@
 using System;
 
+[System.Serializable]
 public struct Character
 {
   public int x;

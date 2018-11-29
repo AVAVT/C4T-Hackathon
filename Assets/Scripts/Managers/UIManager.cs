@@ -7,6 +7,22 @@ public class UIManager: MonoBehaviour,IOutputUI
   public Text farmer1Path,collector1Path,worm1Path,farmer2Path,collector2Path,worm2Path;
   public Text outputText;
 
+  public void SavePlayerName()
+  {
+    if(!String.IsNullOrEmpty(farmer1Input.text)) PlayerPrefs.SetString("blue-planter", farmer1Input.text); 
+    else PlayerPrefs.SetString("blue-planter", farmer1Input.text);
+    if(!String.IsNullOrEmpty(collector1Input.text)) PlayerPrefs.SetString("blue-harvester", collector1Input.text); 
+    else PlayerPrefs.SetString("blue-harvester", collector1Input.text);
+    if(!String.IsNullOrEmpty(worm1Input.text)) PlayerPrefs.SetString("blue-worm", worm1Input.text); 
+    else PlayerPrefs.SetString("blue-worm", worm1Input.text);
+    if(!String.IsNullOrEmpty(farmer2Input.text)) PlayerPrefs.SetString("red-planter", farmer2Input.text); 
+    else PlayerPrefs.SetString("red-planter", farmer2Input.text);
+    if(!String.IsNullOrEmpty(collector2Input.text)) PlayerPrefs.SetString("red-harvester", collector2Input.text); 
+    else PlayerPrefs.SetString("red-harvester", collector2Input.text);
+    if(!String.IsNullOrEmpty(worm2Input.text)) PlayerPrefs.SetString("red-worm", worm2Input.text); 
+    else PlayerPrefs.SetString("red-worm", worm2Input.text);
+  }
+
   public void ShowOutputText(string text)
   {
     outputText.text += text + "\n";

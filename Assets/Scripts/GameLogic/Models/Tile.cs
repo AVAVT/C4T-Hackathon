@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System;
 using System.Numerics;
 
+[System.Serializable]
 public struct Tile
 {
   public int x;

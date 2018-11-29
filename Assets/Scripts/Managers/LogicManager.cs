@@ -10,22 +10,11 @@ public class LogicManager : MonoBehaviour
   //turn base
   private int turn;
 
-  void Start()
-  {
-  }
-
   public void ButtonPlayClick()
   {
     if (pythonManager.IsHavingAllFiles())
     {
-      //start engine
-      pythonManager.InitEngine();
-
-      //call all AI's do_start methods
-      for (int i = 0; i < 6; i++)
-      {
-        pythonManager.WaitAIResponse(i, GetClassnameByIndex(i), "do_start");
-      }
+      StartGame();
     }
     else
     {
@@ -33,10 +22,10 @@ public class LogicManager : MonoBehaviour
     }
   }
 
-  public string GetClassnameByIndex(int index)
+  void StartGame()
   {
-    if (index == 0 || index == 3) return "Planter";
-    else if (index == 1 || index == 4) return "Harvester";
-    else return "Worm";
+    //start engine
+    uiManager.SavePlayerName();
+    StartCoroutine(pythonManager.StartRecordGame());
   }
 }

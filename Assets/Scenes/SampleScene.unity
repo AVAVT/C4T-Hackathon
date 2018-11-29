@@ -933,7 +933,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: 'Garden: Orcs vs Humans'
+  m_Text: 'Garden: AI Challenge'
 --- !u!222 &384032467
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -4958,7 +4958,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Team Humans
+  m_Text: Team Red
 --- !u!222 &1518544736
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -5885,7 +5885,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: Team Orcs
+  m_Text: Team Blue
 --- !u!222 &1896418386
 CanvasRenderer:
   m_ObjectHideFlags: 0

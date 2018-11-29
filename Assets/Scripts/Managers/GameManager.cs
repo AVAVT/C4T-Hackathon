@@ -15,6 +15,7 @@ public class GameManager : MonoBehaviour {
 	void BindManagers()
 	{
 		logicManager.pythonManager = this.pythonManager;
+		logicManager.uiManager = this.uIManager;
 		pythonManager.textOutputManager = this.uIManager;
 	}
 }

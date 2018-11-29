@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public interface IPythonInterpreter {
-	void InitEngine();
+	IEnumerator StartRecordGame();
 	bool IsHavingAllFiles();
-	string GetResult(string fileName,string className, string methodName);
-	void WaitAIResponse(int i, string className, string methodName);
+	// void WaitAIResponse(int i, string className, string methodName);
 }

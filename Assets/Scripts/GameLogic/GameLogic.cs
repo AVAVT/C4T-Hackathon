@@ -3,6 +3,7 @@ using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
 using System;
+using System.Threading;
 
 public class GameLogic
 {
@@ -113,6 +114,7 @@ public class GameLogic
   public void ExecuteTurn(List<TurnAction> actions)
   {
     DoMove(actions);
+    DoCatchWorm(actions);
     // TODO Planter catch Worm
     // TODO Worm scares Harvester
     // TODO Worm destroy Plant
@@ -178,6 +180,7 @@ public class GameLogic
 
   void InitializeTeam(Team team, ServerGameState gameState, List<Vector2> startingPoses)
   {
+    gameState.characters.Add(team, new Dictionary<CharacterRole, Character>());
     for (int i = 0; i < 3; i++)
     {
       var pos = startingPoses[i];
@@ -187,7 +190,8 @@ public class GameLogic
           team,
           (CharacterRole)i
         );
-      gameState.characters[team][(CharacterRole)i] = character;
+      gameState.characters[team].Add((CharacterRole)i, character);  
+      // gameState.characters[team][(CharacterRole)i] = character;
     }
   }
 

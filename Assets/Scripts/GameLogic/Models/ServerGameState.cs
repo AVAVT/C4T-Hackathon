@@ -9,6 +9,7 @@ public class ServerGameState
   public int mapHeight = GameConfigs.MAP_HEIGHT;
   public Dictionary<Team, Dictionary<CharacterRole, Character>> characters = new Dictionary<Team, Dictionary<CharacterRole, Character>>();
   public List<List<Tile>> map = new List<List<Tile>>();
+  
   public GameState GameStateForTeam(Team team)
   {
     var result = new GameState(turn, team);

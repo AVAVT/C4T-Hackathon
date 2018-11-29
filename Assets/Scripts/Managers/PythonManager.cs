@@ -23,16 +23,13 @@ public class PythonManager : MonoBehaviour, IPythonInterpreter
   private int currentAIIndex;
 
   //Iron Python
-  private string[] paths;
-  private ScriptSource[] sources;
-  private ScriptScope[] scopes;
   private ScriptEngine engine;
+  List<AICharacter> characters = new List<AICharacter>();
+  private string[] paths;
 
   void Awake()
   {
     paths = new string[6];
-    sources = new ScriptSource[6];
-    scopes = new ScriptScope[6];
   }
 
   public void OpenFileBrowser(int index)
@@ -54,8 +51,11 @@ public class PythonManager : MonoBehaviour, IPythonInterpreter
   {
     if (!String.IsNullOrEmpty(path))
     {
+      var sourcePath = Path.GetDirectoryName(path);
       var copyPath = GetPathByIndex(currentAIIndex, path);
-      File.Copy(path, copyPath, true);
+      EmptyDirectory(copyPath);
+      CopyAllDirectory(sourcePath, copyPath);
+      // File.Copy(path, copyPath, true);
       UnityEngine.Debug.Log($"Copied file to path: {copyPath}");
       textOutputManager.ShowOutputText($"Copied file to path: {copyPath}");
     }
@@ -65,39 +65,61 @@ public class PythonManager : MonoBehaviour, IPythonInterpreter
     }
   }
 
+  private void CopyAllDirectory(string sourceDir, string targetDir)
+  {
+    foreach (var dir in Directory.GetDirectories(sourceDir, "*", SearchOption.AllDirectories))
+      Directory.CreateDirectory(Path.Combine(targetDir, dir.Substring(sourceDir.Length + 1)));
+    foreach (var fileName in Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories))
+      File.Copy(fileName, Path.Combine(targetDir, fileName.Substring(sourceDir.Length + 1)), true);
+  }
+
+  private void EmptyDirectory(string path)
+  {
+    if (Directory.Exists(path))
+    {
+      Directory.Delete(path, true);
+    }
+  }
+
   private string GetPathByIndex(int index, string path)
   {
     string tempPath;
     switch (index)
     {
       case 0:
-        tempPath = $"{Application.streamingAssetsPath}/orc-planter.py";
-        paths[index] = tempPath;
+        tempPath = $"{Application.streamingAssetsPath}/blue-planter";
+        Directory.CreateDirectory(tempPath);
+        paths[index] = $"{tempPath}/main.py";
         textOutputManager.ShowPathByIndex(index, path);
         return tempPath;
       case 1:
-        tempPath = $"{Application.streamingAssetsPath}/orc-harvester.py";
-        paths[index] = tempPath;
+        tempPath = $"{Application.streamingAssetsPath}/blue-harvester";
+        Directory.CreateDirectory(tempPath);
+        paths[index] = $"{tempPath}/main.py";
         textOutputManager.ShowPathByIndex(index, path);
         return tempPath;
       case 2:
-        tempPath = $"{Application.streamingAssetsPath}/orc-worm.py";
-        paths[index] = tempPath;
+        tempPath = $"{Application.streamingAssetsPath}/blue-worm";
+        Directory.CreateDirectory(tempPath);
+        paths[index] = $"{tempPath}/main.py";
         textOutputManager.ShowPathByIndex(index, path);
         return tempPath;
       case 3:
-        tempPath = $"{Application.streamingAssetsPath}/human-planter.py";
-        paths[index] = tempPath;
+        tempPath = $"{Application.streamingAssetsPath}/red-planter";
+        Directory.CreateDirectory(tempPath);
+        paths[index] = $"{tempPath}/main.py";
         textOutputManager.ShowPathByIndex(index, path);
         return tempPath;
       case 4:
-        tempPath = $"{Application.streamingAssetsPath}/human-harvester.py";
-        paths[index] = tempPath;
+        tempPath = $"{Application.streamingAssetsPath}/red-harvester";
+        Directory.CreateDirectory(tempPath);
+        paths[index] = $"{tempPath}/main.py";
         textOutputManager.ShowPathByIndex(index, path);
         return tempPath;
       case 5:
-        tempPath = $"{Application.streamingAssetsPath}/human-worm.py";
-        paths[index] = tempPath;
+        tempPath = $"{Application.streamingAssetsPath}/red-worm";
+        Directory.CreateDirectory(tempPath);
+        paths[index] = $"{tempPath}/main.py";
         textOutputManager.ShowPathByIndex(index, path);
         return tempPath;
       default:
@@ -111,90 +133,26 @@ public class PythonManager : MonoBehaviour, IPythonInterpreter
     try
     {
       engine = UnityPython.CreateEngine();
+      var searchPaths = engine.GetSearchPaths();
       for (int i = 0; i < paths.Length; i++)
       {
-        sources[i] = engine.CreateScriptSourceFromFile(paths[i]);
-        scopes[i] = engine.CreateScope();
+        var source = engine.CreateScriptSourceFromFile(paths[i]);
+        var scope = engine.CreateScope();
+        AICharacter character = new AICharacter(engine, source, scope);
+        characters.Add(character);
+        character.Character = new Character();
+
+        if (!String.IsNullOrEmpty(Path.GetDirectoryName(paths[i])))
+          searchPaths.Add(Path.GetDirectoryName(paths[i]));
+        else
+          searchPaths.Add(Environment.CurrentDirectory);
       }
+      engine.SetSearchPaths(searchPaths);
     }
     catch (System.Exception ex)
     {
       UnityEngine.Debug.Log(ex);
       return;
-    }
-  }
-
-  public void WaitAIResponse(int i, string className, string methodName)
-  {
-    //start new task
-    var ct = new CancellationTokenSource(500);
-    var tcs = new TaskCompletionSource<bool>();
-    ct.Token.Register(() => tcs.TrySetCanceled(), useSynchronizationContext: false);
-    var myClass = GetObject(i, className);
-    Stopwatch sw = Stopwatch.StartNew();
-    Task<string>.Factory.StartNew(() => GetAIResponse(myClass, methodName, new object[] { "Hi" }), ct.Token).ContinueWith((task) =>
-    {
-      sw.Stop();
-      UnityEngine.Debug.Log(sw.ElapsedMilliseconds);
-
-      if (task.IsFaulted)
-      {
-        throw task.Exception;
-      }
-      else if (task.IsCanceled || ct.IsCancellationRequested)
-      {
-        UnityEngine.Debug.Log("Time out!");
-        //TODO: Time out action -> lose turn
-      }
-      else
-      {
-        ct.Cancel();
-        UnityEngine.Debug.Log("Task completed!!!");
-        UnityEngine.Debug.Log($"Result: {task.Result}");
-      }
-    });
-  }
-
-  System.Object GetObject(int i, string className)
-  {
-    sources[i].Execute(scopes[i]);
-    return engine.Operations.Invoke(scopes[i].GetVariable(className));
-  }
-
-  private string GetAIResponse(System.Object myclass, string methodName, object[] parameters)
-  {
-    try
-    {
-      return engine.Operations.InvokeMember(myclass, methodName, parameters);
-    }
-    catch (System.Exception ex)
-    {
-      UnityEngine.Debug.Log(ex);
-    }
-    return null;
-  }
-
-  public string GetResult(string fileName, string className, string methodName)
-  {
-    try
-    {
-      var engine = UnityPython.CreateEngine();
-      var path = $"{Application.streamingAssetsPath}/{fileName}.py";
-      var source = engine.CreateScriptSourceFromFile(path);
-      var scope = engine.CreateScope();
-      source.Execute(scope);
-
-      System.Object myclass = engine.Operations.Invoke(scope.GetVariable(className));
-      object[] parameters = new object[] { "Hi" };
-      var result = engine.Operations.InvokeMember(myclass, methodName, parameters);
-      UnityEngine.Debug.Log(result);
-      return result;
-    }
-    catch (System.Exception ex)
-    {
-      var foo = ex.Message;
-      UnityEngine.Debug.Log($"Error: {ex.Message}\n");
-      return ex.Message;
     }
   }
 
@@ -210,5 +168,25 @@ public class PythonManager : MonoBehaviour, IPythonInterpreter
       }
     }
     return isFull;
+  }
+
+  public IEnumerator StartRecordGame()
+  {
+    InitEngine();
+
+    GameLogic gameLogic = new GameLogic();
+    RecordManager recordManager = new RecordManager();
+
+    Task gameTask = gameLogic.StartGame(
+      characters[0],
+      characters[1],
+      characters[2],
+      characters[3],
+      characters[4],
+      characters[5],
+      recordManager
+    );
+    while(!gameTask.IsCompleted) yield return null;
+    UnityEngine.Debug.Log("Game end!");
   }
 }
