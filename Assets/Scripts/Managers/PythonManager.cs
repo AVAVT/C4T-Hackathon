@@ -139,8 +139,8 @@ public class PythonManager : MonoBehaviour, IPythonInterpreter
         var source = engine.CreateScriptSourceFromFile(paths[i]);
         var scope = engine.CreateScope();
         PythonAICharacter character = new PythonAICharacter(engine, source, scope);
-        characters.Add(character);
         character.Character = new Character();
+        characters.Add(character);
 
         if (!String.IsNullOrEmpty(Path.GetDirectoryName(paths[i])))
           searchPaths.Add(Path.GetDirectoryName(paths[i]));
@@ -153,6 +153,16 @@ public class PythonManager : MonoBehaviour, IPythonInterpreter
     {
       UnityEngine.Debug.Log(ex);
       return;
+    }
+  }
+
+  void InitBotCharacter()
+  {
+    for (int i = 0; i < 6; i++)
+    {
+      BotCharacter character = new BotCharacter($"Bot-{i}");
+      character.Character = new Character();
+      characters.Add(character);
     }
   }
 
@@ -170,14 +180,15 @@ public class PythonManager : MonoBehaviour, IPythonInterpreter
     return isFull;
   }
 
-  public IEnumerator StartRecordGame()
+  public void StartRecordGame()
   {
-    InitEngine();
+    // InitEngine();
+    InitBotCharacter();
 
     GameLogic gameLogic = new GameLogic();
     RecordManager recordManager = new RecordManager();
 
-    Task gameTask = gameLogic.StartGame(
+    gameLogic.StartGame(
       characters[0],
       characters[1],
       characters[2],
@@ -185,8 +196,11 @@ public class PythonManager : MonoBehaviour, IPythonInterpreter
       characters[4],
       characters[5],
       recordManager
-    );
-    while(!gameTask.IsCompleted) yield return null;
-    UnityEngine.Debug.Log("Game end!");
+    ).ContinueWith((task) =>
+    {
+      if (task.IsFaulted) UnityEngine.Debug.Log($"Task is faulted! Error: {task.Exception}!");
+      if (task.IsCanceled) UnityEngine.Debug.Log($"Task is canceled!");
+      else UnityEngine.Debug.Log("End game!");
+    });
   }
 }

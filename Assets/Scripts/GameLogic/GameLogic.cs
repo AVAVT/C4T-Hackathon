@@ -35,8 +35,6 @@ public class GameLogic
     IReplayRecorder recorder = null
   )
   {
-    recorder?.LogGameState(ServerGameState);
-
     controllers.Add(redPlanterController);
     controllers.Add(redHarvesterController);
     controllers.Add(redWormController);
@@ -57,6 +55,8 @@ public class GameLogic
       blueHarvesterController,
       blueWormController
     );
+
+    recorder?.LogGameState(ServerGameState);
 
     while (ServerGameState.turn < GameConfigs.GAME_LENGTH)
     {
@@ -88,6 +88,7 @@ public class GameLogic
 
   async Task PlayNextTurn(IReplayRecorder recorder)
   {
+    UnityEngine.Debug.Log("Play Turn");
     var redTeamGameState = ServerGameState.GameStateForTeam(Team.Red);
     var blueTeamGameState = ServerGameState.GameStateForTeam(Team.Blue);
     List<TurnAction> actions = new List<TurnAction>();
@@ -107,21 +108,22 @@ public class GameLogic
     }
 
     ExecuteTurn(actions);
-    recorder?.LogTurn(actions);
+    recorder?.LogTurn(ServerGameState, actions);
+    ServerGameState.turn++;
   }
 
   /// <summary>Progress the game state with given actions</summary>
   public void ExecuteTurn(List<TurnAction> actions)
   {
+    UnityEngine.Debug.Log("Execute Turn");
+    
     DoMove(actions);
     DoCatchWorm(ServerGameState);
     DoScareHarvester(ServerGameState);
     DoPlantTree(ServerGameState);
-    DoGetPoint(ServerGameState);
+    DoHarvest(ServerGameState);
     DoGetPoint(ServerGameState);
     DoGrowPlant(ServerGameState);
-
-    ServerGameState.turn++;
   }
 
   void DoEnd(IReplayRecorder recorder)
@@ -135,11 +137,17 @@ public class GameLogic
       for (int col = 0; col < serverGameState.mapWidth; col++)
       {
         var tile = serverGameState.map[row][col];
-        if ((tile.type == TileType.WILDBERRY
-        || tile.type == TileType.PUMPKIN
-        || tile.type == TileType.TOMATO)
-        && tile.growState < 5)
+        if (tile.type == TileType.WILDBERRY
+        && tile.growState < GameConfigs.WILDBERRY_FRUIT_TIME)
+        {
           tile.growState++;
+        }
+        if ((tile.type == TileType.PUMPKIN
+        || tile.type == TileType.TOMATO)
+        && tile.growState < GameConfigs.PLANT_FRUIT_TIME)
+        {
+          tile.growState++;
+        }
       }
     }
   }
@@ -239,6 +247,7 @@ public class GameLogic
   void DoMove(List<TurnAction> actions)
   {
     Dictionary<Team, Dictionary<CharacterRole, Character>> targetPoses = new Dictionary<Team, Dictionary<CharacterRole, Character>>();
+    targetPoses = ServerGameState.characters;
     foreach (var action in actions)
     {
       var character = ServerGameState.characters[action.team][action.role];
@@ -247,12 +256,14 @@ public class GameLogic
         newPos += action.direction.ToDirectionVector();
       else
         character.isScared = false;
-        
+
       character.x = Math.Max(Math.Min((int)newPos.X, GameConfigs.MAP_WIDTH - 1), 0);
       character.y = Math.Max(Math.Min((int)newPos.Y, GameConfigs.MAP_HEIGHT - 1), 0);
 
-      if(!IsInImpassableTile(ServerGameState, character))
+      if (!IsInImpassableTile(ServerGameState, character))
+      {
         targetPoses[action.team][action.role] = character;
+      }
     }
 
     // Cancel movement on counter roles swaping places

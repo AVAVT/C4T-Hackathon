@@ -1,9 +1,8 @@
+using System.Collections.Generic;
+
 [System.Serializable]
-public class RecordModel
+public struct RecordModel
 {
-  public int turn = 1;
-  public int redScore = 0;
-  public int blueScore = 0;
-  public 
+  public ServerGameState serverGameState;
   public List<TurnAction> actions;
 }

@@ -30,5 +30,5 @@ public static class GameConfigs
     new Vector2(4,1)
   };
   public static readonly int SIGHT_DISTANCE = 2;
-  public static readonly int GAME_LENGTH = 1000;
+  public static readonly int GAME_LENGTH = 50;
 }

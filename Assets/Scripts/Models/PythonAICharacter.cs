@@ -38,26 +38,20 @@ public class PythonAICharacter : ICharacterController
     this.scope = scope;
   }
 
-  public string GetClassnameByIndex(int index)
-  {
-    if (index == 0 || index == 3) return "Planter";
-    else if (index == 1 || index == 4) return "Harvester";
-    else return "Worm";
-  }
-
   public void DoStart(GameState gameState)
   {
     UnityEngine.Debug.Log($"{Character.characterRole.ToString()}: Do start!");
 
-    var myClass = GetObject(Character.characterRole.ToString());
-    string json = JsonUtility.ToJson(gameState);
-    UnityEngine.Debug.Log(GetAIResponse(myClass, "do_start", new object[] { json }));
+    // var myClass = GetObject(Character.characterRole.ToString());
+    // string json = JsonUtility.ToJson(gameState);
+    // UnityEngine.Debug.Log(GetAIResponse(myClass, "do_start", new object[] { json }));
   }
 
   public async Task<string> DoTurn(GameState gameState)
   {
     UnityEngine.Debug.Log($"{Character.characterRole.ToString()}: Do turn!");
-
+    UpdateCharacter(gameState);
+    
     var ct = new CancellationTokenSource(100);
     var tcs = new TaskCompletionSource<bool>();
     ct.Token.Register(() => tcs.TrySetCanceled(), useSynchronizationContext: false);
@@ -73,8 +67,8 @@ public class PythonAICharacter : ICharacterController
 
       if (task.IsFaulted)
       {
-        UnityEngine.Debug.Log("Time out!");
-        isTimedOut = true;        
+        UnityEngine.Debug.Log($"AI is crashed! Error: {task.Exception}");
+        isCrashed = true;        
       }
       else if (task.IsCanceled || ct.IsCancellationRequested)
       {
@@ -91,6 +85,18 @@ public class PythonAICharacter : ICharacterController
       }
     });
     return result;
+  }
+
+  void UpdateCharacter(GameState gameState)
+  {
+    foreach (var ally in gameState.allies)
+    {
+      if(ally.characterRole == Character.characterRole)
+      {
+        Character = ally;
+        UnityEngine.Debug.Log($"x: {Character.x} - y: {Character.y}");
+      }
+    }
   }
 
   System.Object GetObject(string className)

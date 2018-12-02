@@ -3,7 +3,7 @@ using System.Collections.Generic;
 public interface IReplayRecorder
 {
   void LogGameState(ServerGameState serverGameState);
-  void LogTurn(List<TurnAction> actions);
+  void LogTurn(ServerGameState serverGameState, List<TurnAction> actions);
   void LogEndGame(ServerGameState serverGameState);
 }
 

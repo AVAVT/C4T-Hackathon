@@ -12,20 +12,22 @@ public class LogicManager : MonoBehaviour
 
   public void ButtonPlayClick()
   {
-    if (pythonManager.IsHavingAllFiles())
-    {
-      StartGame();
-    }
-    else
-    {
-      Debug.Log("Please provide all required AI file for all characters!");
-    }
+    // if (pythonManager.IsHavingAllFiles())
+    // {
+    //   StartGame();
+    // }
+    // else
+    // {
+    //   Debug.Log("Please provide all required AI file for all characters!");
+    // }
+
+    StartGame();
   }
 
   void StartGame()
   {
     //start engine
-    uiManager.SavePlayerName();
-    StartCoroutine(pythonManager.StartRecordGame());
+    // uiManager.SavePlayerName();
+    pythonManager.StartRecordGame();
   }
 }
