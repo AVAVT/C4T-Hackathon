@@ -132,9 +132,9 @@ public class GameLogic
   }
   void DoGrowPlant(ServerGameState serverGameState)
   {
-    for (int row = 0; row < serverGameState.mapHeight; row++)
+    for (int row = 0; row < serverGameState.mapWidth; row++)
     {
-      for (int col = 0; col < serverGameState.mapWidth; col++)
+      for (int col = 0; col < serverGameState.mapHeight; col++)
       {
         var tile = serverGameState.map[row][col];
         if (tile.type == TileType.WILDBERRY
@@ -329,7 +329,7 @@ public class GameLogic
     for (int x = 0; x < GameConfigs.MAP_WIDTH; x++)
     {
       gameState.map.Add(new List<Tile>());
-      for (int y = 0; y < GameConfigs.MAP_WIDTH; y++)
+      for (int y = 0; y < GameConfigs.MAP_HEIGHT; y++)
       {
         var tile = new Tile(x, y);
         if (tile == GameConfigs.RED_BOX_POS)

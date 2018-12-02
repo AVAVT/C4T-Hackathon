@@ -380,6 +380,8 @@ public class Node
   {
     int dstX = UnityEngine.Mathf.Abs(x - targetNode.x);
     int dstY = UnityEngine.Mathf.Abs(y - targetNode.y);
-    return dstX + dstY;
+    if(dstX > dstY) return 14*dstY + 10*(dstX - dstY);
+    else return 14*dstX + 10*(dstY - dstX);
+    // return dstX + dstY;
   }
 }
