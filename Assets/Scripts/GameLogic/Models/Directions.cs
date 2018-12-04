@@ -25,9 +25,7 @@ public static class DirectionStringExtension
   }
 
   public static string ToDirectionString(Vector2 direction)
-  {
-    UnityEngine.Debug.Log(direction);
-    
+  {    
     if(direction.X == 1 && direction.Y == 0) return Directions.RIGHT;
     else if(direction.X == -1 && direction.Y == 0) return Directions.LEFT;
     else if(direction.X == 0 && direction.Y == 1) return Directions.UP;

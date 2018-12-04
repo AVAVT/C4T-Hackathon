@@ -42,9 +42,9 @@ public class PythonAICharacter : ICharacterController
   {
     UnityEngine.Debug.Log($"{Character.characterRole.ToString()}: Do start!");
 
-    // var myClass = GetObject(Character.characterRole.ToString());
-    // string json = JsonUtility.ToJson(gameState);
-    // UnityEngine.Debug.Log(GetAIResponse(myClass, "do_start", new object[] { json }));
+    var myClass = GetObject(Character.characterRole.ToString());
+    string json = JsonUtility.ToJson(gameState);
+    UnityEngine.Debug.Log(GetAIResponse(myClass, "do_start", new object[] { json }));
   }
 
   public async Task<string> DoTurn(GameState gameState)

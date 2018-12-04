@@ -5,19 +5,25 @@ using System.IO;
 using GracesGames.SimpleFileBrowser.Scripts;
 using Newtonsoft.Json;
 using UnityEngine;
+using DG.Tweening;
 
 public class DisplayRecordManager : MonoBehaviour
 {
+  public IPlaySceneUI uiManager;
   private string logPath;
-  [Header("File loader")]
-  public GameObject FileBrowserPrefab;
-  public string[] FileExtensions;
-  public bool PortraitMode;
 
   [Header("Map")]
   [SerializeField] private Transform gridTransform;
-  [SerializeField] private Sprite unknownSprite, impassableSprite, emptySprite, redBoxSprite, redRockSprite, blueBoxSprite, blueRockSprite;
-  [SerializeField] private Sprite[] wildBerrySprite, tomatoSprite, pumpkinSprite;
+  [SerializeField] private Sprite unknownSprite;
+  [SerializeField] private Sprite impassableSprite;
+  [SerializeField] private Sprite emptySprite;
+  [SerializeField] private Sprite redBoxSprite;
+  [SerializeField] private Sprite redRockSprite;
+  [SerializeField] private Sprite blueBoxSprite;
+  [SerializeField] private Sprite blueRockSprite;
+  [SerializeField] private Sprite[] wildBerrySprite;
+  [SerializeField] private Sprite[] tomatoSprite;
+  [SerializeField] private Sprite[] pumpkinSprite;
   [SerializeField] private Vector2 gridSize, gridOffset;
   [SerializeField] private Vector2 cellSize;
   private int rows, cols;
@@ -26,56 +32,195 @@ public class DisplayRecordManager : MonoBehaviour
   private List<List<GameObject>> cellGOs = new List<List<GameObject>>();
   private List<RecordModel> logs = new List<RecordModel>();
 
-  public PlayRecordUI uiManager;
+  [Header("Characters")]
+  [SerializeField] private GameObject redPlanterPrefab;
+  [SerializeField] private GameObject redHarvesterPrefab;
+  [SerializeField] private GameObject redWormPrefab;
+  [SerializeField] private GameObject bluePlanterPrefab;
+  [SerializeField] private GameObject blueHarvesterPrefab;
+  [SerializeField] private GameObject blueWormPrefab;
+  private Dictionary<Team, Dictionary<CharacterRole, GameObject>> characterGOs = new Dictionary<Team, Dictionary<CharacterRole, GameObject>>();
+  private Dictionary<Team, Dictionary<CharacterRole, Character>> characters = new Dictionary<Team, Dictionary<CharacterRole, Character>>();
+  private List<string> listNames = new List<string>();
 
-  //--------------------------------- Read file --------------------------------------
-  public void OpenFileBrowser()
+
+  [Header("Playing records")]
+  [SerializeField] private float turnTime;
+  private float timeMultiplier;
+  private PlayRecordState playRecordState = PlayRecordState.Stop;
+  private int currentTurn = 0;
+
+  void Start()
   {
-    GameObject fileBrowserObject = Instantiate(FileBrowserPrefab, transform);
-    fileBrowserObject.name = "FileBrowser";
+    ChangeGameSpeedButtonClick(1);
+    uiManager = GetComponent<PlayRecordUI>();
 
-    FileBrowser fileBrowserScript = fileBrowserObject.GetComponent<FileBrowser>();
-    fileBrowserScript.SetupFileBrowser(PortraitMode ? ViewMode.Portrait : ViewMode.Landscape);
-
-    fileBrowserScript.OpenFilePanel(FileExtensions);
-    // Subscribe to OnFileSelect event (call LoadFileUsingPath using path) 
-    fileBrowserScript.OnFileSelect += LoadFileUsingPath;
+    uiManager.PlayLog = PlayButtonClick;
+    uiManager.StopLog = StopPlayRecord;
+    uiManager.NextTurn = NextButtonClick;
+    uiManager.PrevTurn = PrevButtonClick;
+    uiManager.ChangeGameSpeed = ChangeGameSpeedButtonClick;
+    uiManager.ChangeTurn = ChangeTurn;
+    if (PlayerPrefs.GetInt("PlayDirect", 0) == 1)
+    {
+      PlayerPrefs.SetInt("PlayDirect", 0);
+      PlayRecordLog();
+    }
+  }
+  void GetLogFromPath(string path)
+  {
+    string json = File.ReadAllText(path);
+    logs = JsonConvert.DeserializeObject<List<RecordModel>>(json);
+    mapInfo = logs[currentTurn].serverGameState.map;
+    rows = logs[currentTurn].serverGameState.mapHeight;
+    cols = logs[currentTurn].serverGameState.mapWidth;
+    characters = logs[currentTurn].serverGameState.characters;
   }
 
-  // Loads a file using a path
-  private void LoadFileUsingPath(string path)
+  List<string> GetPlayerNames()
   {
-    if (!String.IsNullOrEmpty(path))
+    List<string> listNames = new List<string>();
+    for (int i = 0; i < 6; i++)
     {
-      logPath = path;
-      logs = GetLogFromPath(logPath);
-      mapInfo = logs[0].serverGameState.map;
-      rows = logs[0].serverGameState.mapHeight;
-      cols = logs[0].serverGameState.mapWidth;
+      if (PlayerPrefs.GetString($"Player{i}Name", $"Player {i}") == "") listNames.Add($"Player {i}");
+      else listNames.Add(PlayerPrefs.GetString($"Player{i}Name", $"Player {i}"));
     }
-    else
-    {
-      Debug.Log("Invalid path given");
-    }
+    return listNames;
   }
-
   //----------------------------------- Play record ----------------------------------
   public void PlayRecordLog()
   {
     if (logPath == null)
     {
       logPath = PlayerPrefs.GetString("LogPath");
-      logs = GetLogFromPath(logPath);
-      mapInfo = logs[0].serverGameState.map;
+      GetLogFromPath(logPath);
     }
-    uiManager.LoadPanel.SetActive(false);
+
+    listNames = GetPlayerNames();
+    uiManager.DisplayGameInfo(listNames, logs);
+    uiManager.DisplayTurnInfo(currentTurn, logs[currentTurn].serverGameState.blueScore, logs[currentTurn].serverGameState.redScore);
     InitGrid();
+    InitCharacter();
+    StartCoroutine(PlayLogs());
   }
 
-  List<RecordModel> GetLogFromPath(string path)
+  IEnumerator PlayLogs(bool isContinue = false)
   {
-    string json = File.ReadAllText(path);
-    return JsonConvert.DeserializeObject<List<RecordModel>>(json);
+    playRecordState = PlayRecordState.Playing;
+    uiManager.StartPlaying();
+    if (!isContinue) currentTurn++;
+    while (currentTurn < logs.Count)
+    {
+      if (currentTurn == logs.Count - 1) uiManager.ToggleResult(true);
+      uiManager.DisplayTurnInfo(currentTurn, logs[currentTurn].serverGameState.blueScore, logs[currentTurn].serverGameState.redScore);
+      yield return ChangeCharacter(currentTurn);
+      currentTurn++;
+    }
+  }
+
+  IEnumerator ChangeMap(int currentTurn)
+  {
+    Debug.Log($"Current turn: {currentTurn}");
+    var currentMap = logs[currentTurn].serverGameState.map;
+    for (int row = 0; row < logs[currentTurn].serverGameState.mapWidth; row++)
+    {
+      for (int col = 0; col < logs[currentTurn].serverGameState.mapHeight; col++)
+      {
+        if (mapInfo[row][col].type != currentMap[row][col].type)
+        {
+          mapInfo[row][col] = currentMap[row][col];
+          cellGOs[row][col].GetComponent<SpriteRenderer>().sprite = GetSpriteByTileType(mapInfo[row][col].type, mapInfo[row][col].growState);
+          yield return null;
+        }
+        if (currentTurn == 0)
+        {
+          if (mapInfo[row][col].type == TileType.TOMATO || mapInfo[row][col].type == TileType.PUMPKIN)
+          {
+            var tempTile = mapInfo[row][col];
+            tempTile.type = TileType.EMPTY;
+            mapInfo[row][col] = tempTile;
+            cellGOs[row][col].GetComponent<SpriteRenderer>().sprite = GetSpriteByTileType(mapInfo[row][col].type, mapInfo[row][col].growState);
+          }
+          else if (mapInfo[row][col].type == TileType.WILDBERRY)
+          {
+            var tempTile = mapInfo[row][col];
+            tempTile.growState = 10;
+            mapInfo[row][col] = tempTile;
+            cellGOs[row][col].GetComponent<SpriteRenderer>().sprite = GetSpriteByTileType(mapInfo[row][col].type, mapInfo[row][col].growState);
+          }
+        }
+      }
+    }
+  }
+
+  IEnumerator ChangeCharacter(int currentTurn)
+  {
+    bool isFinishAnimation = false;
+    var currentActions = logs[currentTurn].actions;
+    if (currentActions != null)
+    {
+      foreach (var action in currentActions)
+      {
+        var currentCharacter = characters[action.team][action.role];
+        if (action.timedOut)
+        {
+          //TODO: Show time out
+          Debug.Log($"AI of {currentCharacter.characterRole} - team {currentCharacter.team} is time out!");
+          isFinishAnimation = true;
+        }
+        else if (action.crashed)
+        {
+          //TODO: Show is crashed
+          Debug.Log($"AI of {currentCharacter.characterRole} - team {currentCharacter.team} is crashed!");
+          isFinishAnimation = true;
+        }
+        else
+        {
+          if (playRecordState == PlayRecordState.Playing)
+          {
+            var direction = DirectionStringExtension.ToDirectionVector(action.direction);
+            if (direction.X != 0 || direction.Y != 0 && IsValidDirection(currentCharacter.x, currentCharacter.y, (int)direction.X, (int)direction.Y))
+            {
+              characterGOs[currentCharacter.team][currentCharacter.characterRole].transform
+                .DOMove(cellGOs[currentCharacter.x + (int)direction.X][currentCharacter.y + (int)direction.Y].transform.position, turnTime)
+                .SetEase(Ease.InOutCubic)
+                .OnComplete(() =>
+                {
+                  //TODO: Show dead animation if dead
+                  isFinishAnimation = true;
+                });
+            }
+          }
+          else
+          {
+            characterGOs[currentCharacter.team][currentCharacter.characterRole].transform.position = cellGOs[currentCharacter.x][currentCharacter.y].transform.position;
+            isFinishAnimation = true;
+          }
+        }
+      }
+    }
+    else
+    {
+      isFinishAnimation = true; //turn 0
+    }
+    yield return new WaitUntil(() => isFinishAnimation);
+    for (int team = 0; team < 2; team++)
+    {
+      for (int i = 0; i < 3; i++)
+      {
+        characters = logs[currentTurn].serverGameState.characters;
+        var currentCharacter = characters[(Team)team][(CharacterRole)i];
+        characterGOs[currentCharacter.team][currentCharacter.characterRole].transform.position = cellGOs[currentCharacter.x][currentCharacter.y].transform.position;
+      }
+    }
+    yield return ChangeMap(currentTurn);
+  }
+
+  bool IsValidDirection(int currentX, int currentY, int directionX, int directionY)
+  {
+    if (currentX + directionX >= cols || currentX + directionX < 0) return false;
+    if (currentY + directionY >= rows || currentY + directionY < 0) return false;
+    return true;
   }
 
   void InitGrid()
@@ -119,6 +264,22 @@ public class DisplayRecordManager : MonoBehaviour
     Destroy(cellObject);
   }
 
+  void InitCharacter()
+  {
+    for (int team = 0; team < 2; team++)
+    {
+      var newDictionary = new Dictionary<CharacterRole, GameObject>();
+      for (int i = 0; i < 3; i++)
+      {
+        var characterInfo = logs[currentTurn].serverGameState.characters[(Team)team][(CharacterRole)i];
+        var cell = cellGOs[characterInfo.x][characterInfo.y];
+        GameObject characterGO = Instantiate(GetPrefabByRole((Team)team, (CharacterRole)i), cell.transform.position, Quaternion.identity) as GameObject;
+        newDictionary.Add((CharacterRole)i, characterGO);
+      }
+      characterGOs.Add((Team)team, newDictionary);
+    }
+  }
+
   Sprite GetSpriteByTileType(TileType tileType, int growState)
   {
     switch (tileType)
@@ -147,4 +308,82 @@ public class DisplayRecordManager : MonoBehaviour
         throw new System.Exception($"Unknown tile type: {tileType}");
     }
   }
+
+  GameObject GetPrefabByRole(Team team, CharacterRole role)
+  {
+    if (team == 0)
+      switch (role)
+      {
+        case CharacterRole.Planter:
+          return redPlanterPrefab;
+        case CharacterRole.Harvester:
+          return redHarvesterPrefab;
+        case CharacterRole.Worm:
+          return redWormPrefab;
+      }
+    else
+      switch (role)
+      {
+        case CharacterRole.Planter:
+          return bluePlanterPrefab;
+        case CharacterRole.Harvester:
+          return blueHarvesterPrefab;
+        case CharacterRole.Worm:
+          return blueWormPrefab;
+      }
+    return null;
+  }
+
+  //---------------------------------------------Play Scene UI Actions --------------------------------------------------
+  private void PlayButtonClick()
+  {
+    StartCoroutine(PlayLogs(true));
+  }
+
+  private void StopPlayRecord()
+  {
+    playRecordState = PlayRecordState.Stop;
+    DOTween.CompleteAll();
+    StopAllCoroutines();
+  }
+
+  private void PrevButtonClick()
+  {
+    if (currentTurn - 1 >= 0)
+    {
+      currentTurn--;
+      ChangeTurn(currentTurn);
+    }
+  }
+
+  private void NextButtonClick()
+  {
+    if (currentTurn + 1 < logs.Count)
+    {
+      currentTurn++;
+      ChangeTurn(currentTurn);
+    }
+  }
+
+  private void ChangeGameSpeedButtonClick(float gameSpeed)
+  {
+    timeMultiplier = gameSpeed;
+    Time.timeScale = timeMultiplier;
+  }
+
+  private void ChangeTurn(int currentTurn)
+  {
+    StopPlayRecord();
+    this.currentTurn = currentTurn;
+    uiManager.DisplayTurnInfo(currentTurn, logs[currentTurn].serverGameState.blueScore, logs[currentTurn].serverGameState.redScore);
+    if (currentTurn == logs.Count - 1) uiManager.ToggleResult(true);
+    else uiManager.ToggleResult(false);
+    StartCoroutine(ChangeCharacter(currentTurn));
+  }
+}
+
+public enum PlayRecordState
+{
+  Playing,
+  Stop
 }

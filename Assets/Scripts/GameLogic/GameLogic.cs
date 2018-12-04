@@ -4,6 +4,9 @@ using System.Numerics;
 using System.Threading.Tasks;
 using System;
 using System.Threading;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.IO;
 
 public class GameLogic
 {
@@ -57,6 +60,7 @@ public class GameLogic
     );
 
     recorder?.LogGameState(ServerGameState);
+    ServerGameState.turn++;
 
     while (ServerGameState.turn < GameConfigs.GAME_LENGTH)
     {
@@ -88,7 +92,6 @@ public class GameLogic
 
   async Task PlayNextTurn(IReplayRecorder recorder)
   {
-    UnityEngine.Debug.Log("Play Turn");
     var redTeamGameState = ServerGameState.GameStateForTeam(Team.Red);
     var blueTeamGameState = ServerGameState.GameStateForTeam(Team.Blue);
     List<TurnAction> actions = new List<TurnAction>();
@@ -115,14 +118,13 @@ public class GameLogic
   /// <summary>Progress the game state with given actions</summary>
   public void ExecuteTurn(List<TurnAction> actions)
   {
-    UnityEngine.Debug.Log("Execute Turn");
-    
     DoMove(actions);
     DoCatchWorm(ServerGameState);
     DoScareHarvester(ServerGameState);
     DoPlantTree(ServerGameState);
     DoHarvest(ServerGameState);
     DoGetPoint(ServerGameState);
+    DoDestroyPlant(ServerGameState);
     DoGrowPlant(ServerGameState);
   }
 
@@ -148,6 +150,7 @@ public class GameLogic
         {
           tile.growState++;
         }
+        serverGameState.map[row][col] = tile;
       }
     }
   }
@@ -162,7 +165,9 @@ public class GameLogic
       {
         if (i == 0) serverGameState.redScore += character.harvest;
         else serverGameState.blueScore += character.harvest;
+        character.performAction2+= character.harvest;
         character.harvest = 0;
+        serverGameState.characters[(Team)i][CharacterRole.Harvester] = character;
       }
     }
   }
@@ -173,11 +178,17 @@ public class GameLogic
       var character = serverGameState.characters[(Team)i][CharacterRole.Harvester];
       var currentTile = serverGameState.map[character.x][character.y];
       var allyTileType = i == 0 ? TileType.TOMATO : TileType.PUMPKIN;
-      if ((currentTile.type == allyTileType || currentTile.type == TileType.WILDBERRY)
-      && currentTile.growState == 5)
+      if ((currentTile.type == allyTileType && currentTile.growState == GameConfigs.PLANT_FRUIT_TIME) 
+      || (currentTile.type == TileType.WILDBERRY && currentTile.growState == GameConfigs.WILDBERRY_FRUIT_TIME))
       {
         currentTile.growState = 1;
         character.harvest++;
+        serverGameState.characters[(Team)i][CharacterRole.Harvester] = character;
+        serverGameState.map[character.x][character.y] = currentTile;
+
+        var harvester = serverGameState.characters[(Team)i][CharacterRole.Harvester];
+        harvester.performAction1++;
+        serverGameState.characters[(Team)i][CharacterRole.Harvester] = harvester;
       }
     }
   }
@@ -191,6 +202,11 @@ public class GameLogic
       {
         currentTile.type = i == 0 ? TileType.TOMATO : TileType.PUMPKIN;
         currentTile.growState++;
+        serverGameState.map[character.x][character.y] = currentTile;
+
+        var planter = serverGameState.characters[(Team)i][CharacterRole.Planter];
+        planter.performAction1++;
+        serverGameState.characters[(Team)i][CharacterRole.Planter] = planter;
       }
     }
   }
@@ -205,6 +221,11 @@ public class GameLogic
       {
         currentTile.type = TileType.EMPTY;
         currentTile.growState = 0;
+        serverGameState.map[character.x][character.y] = currentTile;
+
+        var worm = serverGameState.characters[(Team)i][CharacterRole.Worm];
+        worm.performAction1++;
+        serverGameState.characters[(Team)i][CharacterRole.Worm] = worm;
       }
     }
   }
@@ -212,15 +233,15 @@ public class GameLogic
   {
     for (int i = 0; i < 2; i++)
     {
-      for (int j = 0; j < 2; j++)
+      if (serverGameState.characters[(Team)i][CharacterRole.Worm].DistanceTo(serverGameState.characters[(Team)1 - i][CharacterRole.Harvester]) == 0)
       {
-        if (serverGameState.characters[(Team)i][CharacterRole.Worm].DistanceTo(serverGameState.characters[(Team)j][CharacterRole.Harvester]) == 0
-        && i != j)
-        {
-          var character = serverGameState.characters[(Team)j][CharacterRole.Harvester];
-          character.isScared = true;
-          serverGameState.characters[(Team)j][CharacterRole.Harvester] = character;
-        }
+        var harvester = serverGameState.characters[(Team)1 - i][CharacterRole.Harvester];
+        harvester.isScared = true;
+        serverGameState.characters[(Team)1 - i][CharacterRole.Harvester] = harvester;
+
+        var worm = serverGameState.characters[(Team)i][CharacterRole.Worm];
+        worm.performAction2++;
+        serverGameState.characters[(Team)i][CharacterRole.Worm] = worm;
       }
     }
   }
@@ -228,29 +249,28 @@ public class GameLogic
   {
     for (int i = 0; i < 2; i++)
     {
-      for (int j = 0; j < 2; j++)
+      if (serverGameState.characters[(Team)i][CharacterRole.Planter].DistanceTo(serverGameState.characters[(Team)1 - i][CharacterRole.Worm]) == 0)
       {
-        if (serverGameState.characters[(Team)i][CharacterRole.Planter].DistanceTo(serverGameState.characters[(Team)j][CharacterRole.Worm]) == 0
-        && i != j)
-        {
-          var character = serverGameState.characters[(Team)j][CharacterRole.Worm];
-          var rockPos = j == 0 ? GameConfigs.RED_ROCK_POS : GameConfigs.BLUE_ROCK_POS;
-          character.x = (int)rockPos.X;
-          character.y = (int)rockPos.Y;
-          serverGameState.characters[(Team)j][CharacterRole.Worm] = character;
-        }
-      }
+        var worm = serverGameState.characters[(Team)1 - i][CharacterRole.Worm];
+        var rockPos = (1 - i) == 0 ? GameConfigs.RED_ROCK_POS : GameConfigs.BLUE_ROCK_POS;
+        worm.x = (int)rockPos.X;
+        worm.y = (int)rockPos.Y;
+        serverGameState.characters[(Team)1 - i][CharacterRole.Worm] = worm;
+
+        var planter = serverGameState.characters[(Team)i][CharacterRole.Planter];
+        planter.performAction2++;
+        serverGameState.characters[(Team)i][CharacterRole.Planter] = planter;
+      } 
     }
   }
-
 
   void DoMove(List<TurnAction> actions)
   {
     Dictionary<Team, Dictionary<CharacterRole, Character>> targetPoses = new Dictionary<Team, Dictionary<CharacterRole, Character>>();
-    targetPoses = ServerGameState.characters;
+    targetPoses = ObjectExtensions.Clone(ServerGameState.characters);
     foreach (var action in actions)
     {
-      var character = ServerGameState.characters[action.team][action.role];
+      var character = targetPoses[action.team][action.role];
       var newPos = new Vector2(character.x, character.y);
       if (!character.isScared)
         newPos += action.direction.ToDirectionVector();
@@ -270,21 +290,24 @@ public class GameLogic
     if (AreSwapingPlaces(targetPoses, Team.Red, CharacterRole.Worm, Team.Blue, CharacterRole.Planter))
     {
       targetPoses[Team.Red][CharacterRole.Worm] = ServerGameState.characters[Team.Red][CharacterRole.Worm];
+      SetActionToStay(actions, Team.Red, CharacterRole.Worm);
     }
     else if (AreSwapingPlaces(targetPoses, Team.Red, CharacterRole.Worm, Team.Blue, CharacterRole.Harvester))
     {
       targetPoses[Team.Blue][CharacterRole.Harvester] = ServerGameState.characters[Team.Blue][CharacterRole.Harvester];
+      SetActionToStay(actions, Team.Blue, CharacterRole.Harvester);
     }
 
     if (AreSwapingPlaces(targetPoses, Team.Blue, CharacterRole.Worm, Team.Red, CharacterRole.Planter))
     {
       targetPoses[Team.Blue][CharacterRole.Worm] = ServerGameState.characters[Team.Blue][CharacterRole.Worm];
+      SetActionToStay(actions, Team.Blue, CharacterRole.Worm);
     }
     else if (AreSwapingPlaces(targetPoses, Team.Blue, CharacterRole.Worm, Team.Red, CharacterRole.Harvester))
     {
       targetPoses[Team.Red][CharacterRole.Harvester] = ServerGameState.characters[Team.Red][CharacterRole.Harvester];
+      SetActionToStay(actions, Team.Red, CharacterRole.Harvester);
     }
-
     ServerGameState.characters = targetPoses;
   }
 
@@ -292,6 +315,19 @@ public class GameLogic
   {
     return targetPoses[char1Team][char1Role].DistanceTo(ServerGameState.characters[char2Team][char2Role]) == 0
           && targetPoses[char2Team][char2Role].DistanceTo(ServerGameState.characters[char1Team][char1Role]) == 0;
+  }
+  void SetActionToStay(List<TurnAction> listActions, Team team, CharacterRole characterRole)
+  {
+    for (int i = 0; i < listActions.Count; i++)
+    {
+      if (listActions[i].role == characterRole && listActions[i].team == team)
+      {
+        var temp = listActions[i];
+        temp.direction = Directions.STAY;
+        listActions[i] = temp;
+        break;
+      }
+    }
   }
 
   bool IsInImpassableTile(ServerGameState serverGameState, Character character)
@@ -364,7 +400,44 @@ public class GameLogic
         gameState.map[x].Add(tile);
       }
     }
-
     return gameState;
   }
 }
+
+public static class ObjectExtensions
+{
+  public static T Clone<T>(this T source)
+  {
+    if (!typeof(T).IsSerializable)
+    {
+      throw new ArgumentException("The type must be serializable.", "source");
+    }
+
+    // Don't serialize a null object, simply return the default for that object
+    if (Object.ReferenceEquals(source, null))
+    {
+      return default(T);
+    }
+
+    IFormatter formatter = new BinaryFormatter();
+    using (Stream stream = new MemoryStream())
+    {
+      formatter.Serialize(stream, source);
+      stream.Seek(0, SeekOrigin.Begin);
+      return (T)formatter.Deserialize(stream);
+    }
+  }
+} 
+
+// public class CloneableDictionary<TKey, TValue> : Dictionary<TKey, TValue> where TValue : ICloneable
+// {
+//   public CloneableDictionary<TKey, TValue> Clone()
+//   {
+//     CloneableDictionary<TKey, TValue> clone = new CloneableDictionary<TKey, TValue>();
+//     foreach (KeyValuePair<TKey, TValue> kvp in this)
+//     {
+//       clone.Add(kvp.Key, (TValue)kvp.Value.Clone());
+//     }
+//     return clone;
+//   }
+// }

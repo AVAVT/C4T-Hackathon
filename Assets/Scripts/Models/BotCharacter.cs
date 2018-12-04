@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 public class BotCharacter : ICharacterController
 {
+  public IInputSceneUI uiManager;
   string name;
   private bool isTimedOut = false;
   private bool isCrashed = false;
@@ -51,7 +52,6 @@ public class BotCharacter : ICharacterController
 
   public void DoStart(GameState gameState)
   {
-    UnityEngine.Debug.Log($"Hello, I am {name}");
     //convert map to grid node
     foreach (var row in gameState.map)
     {
@@ -67,7 +67,6 @@ public class BotCharacter : ICharacterController
 
   public async Task<string> DoTurn(GameState gameState)
   {
-    UnityEngine.Debug.Log($"{Character.characterRole.ToString()}: Do turn!");
     UpdateCharacter(gameState);
 
     var ct = new CancellationTokenSource(100);
@@ -79,20 +78,16 @@ public class BotCharacter : ICharacterController
     {
       if (task.IsFaulted)
       {
-        UnityEngine.Debug.Log($"AI is crashed! Error: {task.Exception}");
         isCrashed = true;
       }
       else if (task.IsCanceled || ct.IsCancellationRequested)
       {
-        UnityEngine.Debug.Log("Time out!");
         isTimedOut = true;
       }
       else
       {
         ct.Cancel();
         result = task.Result;
-        UnityEngine.Debug.Log("Task completed!!!");
-        UnityEngine.Debug.Log(result);
       }
     });
     return result;
@@ -105,7 +100,6 @@ public class BotCharacter : ICharacterController
       if (ally.characterRole == Character.characterRole)
       {
         Character = ally;
-        UnityEngine.Debug.Log($"x: {Character.x} - y: {Character.y}");
       }
     }
   }
