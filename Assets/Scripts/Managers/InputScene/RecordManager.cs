@@ -37,8 +37,8 @@ public class RecordManager : MonoBehaviour, IReplayRecorder
   {
     uiManager.ShowOutputText("Log Start game!!!");
     RecordModel recordModel = new RecordModel();
-    serverGameState.turn = 0;
     recordModel.serverGameState = JsonConvert.DeserializeObject<ServerGameState>(JsonConvert.SerializeObject(serverGameState));
+    recordModel.serverGameState.turn = 0;
     recordModel.actions = null;
     log.Add(recordModel);
   }
@@ -47,7 +47,7 @@ public class RecordManager : MonoBehaviour, IReplayRecorder
   public void LogTurn(ServerGameState serverGameState, List<TurnAction> actions)
   {
     uiManager.ShowOutputText($"Recorded turn: {serverGameState.turn}");
-    uiManager.ShowRecordingProcess((float) (serverGameState.turn / GameConfigs.GAME_LENGTH));
+    uiManager.ShowRecordingProcess((float)serverGameState.turn / (float)GameConfigs.GAME_LENGTH);
     RecordModel recordModel = new RecordModel();
     recordModel.serverGameState = JsonConvert.DeserializeObject<ServerGameState>(JsonConvert.SerializeObject(serverGameState));
     recordModel.actions = actions;

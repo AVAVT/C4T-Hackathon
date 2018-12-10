@@ -37579,7 +37579,7 @@
   {
     "serverGameState": {
       "turn": 99,
-      "redScore": 0,
+      "redScore": 1,
       "blueScore": 0,
       "mapWidth": 7,
       "mapHeight": 5,

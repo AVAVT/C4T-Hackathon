@@ -8,4 +8,5 @@ public interface IInputSceneUI
   IEnumerator StartLoadingPlayScene();
   void ShowRecordingProcess(float process);
   Action StartGame{set;}
+  Action<int> LoadAIFolder{set;}
 }

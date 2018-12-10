@@ -1,6 +1,6 @@
 using System;
 using System.Collections;
-using GracesGames.SimpleFileBrowser.Scripts;
+using Crosstales.FB;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -25,11 +25,6 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
   [SerializeField] private Image loadingBar;
   [SerializeField] private TMP_Text loadingProcessText;
 
-  [Header("File loader")]
-  public GameObject FileBrowserPrefab;
-  public string[] FileExtensions;
-  public bool PortraitMode;
-
   public Action StartGame
   {
     set
@@ -37,7 +32,17 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
       startGame = value;
     }
   }
+
+  public Action<int> LoadAIFolder
+  {
+    set
+    {
+      loadAIFolder = value;
+    }
+  }
+
   private Action startGame;
+  private Action<int> loadAIFolder;
 
   private void SavePlayerName()
   {
@@ -63,15 +68,8 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
   //--------------------------------- Read file --------------------------------------
   private void OpenFileBrowser()
   {
-    GameObject fileBrowserObject = Instantiate(FileBrowserPrefab, transform);
-    fileBrowserObject.name = "FileBrowser";
-
-    FileBrowser fileBrowserScript = fileBrowserObject.GetComponent<FileBrowser>();
-    fileBrowserScript.SetupFileBrowser(PortraitMode ? ViewMode.Portrait : ViewMode.Landscape, $"{Application.streamingAssetsPath}/logs");
-
-    fileBrowserScript.OpenFilePanel(FileExtensions);
-    // Subscribe to OnFileSelect event (call LoadFileUsingPath using path) 
-    fileBrowserScript.OnFileSelect += LoadFileUsingPath;
+    var path = FileBrowser.OpenSingleFile("Open log file", Application.streamingAssetsPath +"/logs", "json");
+    LoadFileUsingPath(path);
   }
   // Loads a file using a path
   private void LoadFileUsingPath(string path)
@@ -88,6 +86,10 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
   }
 
   //-------------------------------------- Button methods -----------------------------------------
+  public void LoadAIFolderButtonClick(int index)
+  {
+    loadAIFolder?.Invoke(index);
+  }
   public void StartGameButtonClick()
   {
     //TODO: Transaction
@@ -107,11 +109,13 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
 
   public void LastRecordButtonClick()
   {
+    playRecordPanel.SetActive(false);
     StartCoroutine(StartLoadingPlayScene());
   }
 
   public void ChooseRecordButtonClick()
   {
+    playRecordPanel.SetActive(false);
     OpenFileBrowser();
   }
 
@@ -139,5 +143,17 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
   {
     recordingBar.fillAmount = process;
     recordingProcessText.text = $"{Mathf.FloorToInt(process * 100)}%";
+  }
+
+  public void BackFromInputPanel()
+  {
+    inputPanel.SetActive(false);
+    startPanel.SetActive(true);
+  }
+
+  public void BackFromPlayRecordPanel()
+  {
+    playRecordPanel.SetActive(false);
+    startPanel.SetActive(true);
   }
 }

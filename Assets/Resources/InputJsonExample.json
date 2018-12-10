@@ -1,0 +1,37 @@
+{
+  "turn": 1,
+  "myTeam": 0,
+  "allies": [
+    {
+      "x": 0,
+      "y": 0,
+      "team": 0,
+      "characterRole": 0,
+      "harvest": 0,
+      "isScared": false,
+      "performAction1": 0,
+      "performAction2": 0
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "team": 0,
+      "characterRole": 1,
+      "harvest": 0,
+      "isScared": false,
+      "performAction1": 0,
+      "performAction2": 0
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "team": 0,
+      "characterRole": 2,
+      "harvest": 0,
+      "isScared": false,
+      "performAction1": 0,
+      "performAction2": 0
+    }
+  ],
+  "enemies": []
+}

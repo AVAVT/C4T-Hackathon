@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using GracesGames.SimpleFileBrowser.Scripts;
 using Newtonsoft.Json;
 using UnityEngine;
 using DG.Tweening;
@@ -33,6 +32,7 @@ public class DisplayRecordManager : MonoBehaviour
   private List<RecordModel> logs = new List<RecordModel>();
 
   [Header("Characters")]
+  [SerializeField] private Vector2 characterSize;
   [SerializeField] private GameObject redPlanterPrefab;
   [SerializeField] private GameObject redHarvesterPrefab;
   [SerializeField] private GameObject redWormPrefab;
@@ -50,7 +50,7 @@ public class DisplayRecordManager : MonoBehaviour
   private PlayRecordState playRecordState = PlayRecordState.Stop;
   private int currentTurn = 0;
 
-  void Start()
+  void Awake()
   {
     ChangeGameSpeedButtonClick(1);
     uiManager = GetComponent<PlayRecordUI>();
@@ -61,11 +61,8 @@ public class DisplayRecordManager : MonoBehaviour
     uiManager.PrevTurn = PrevButtonClick;
     uiManager.ChangeGameSpeed = ChangeGameSpeedButtonClick;
     uiManager.ChangeTurn = ChangeTurn;
-    if (PlayerPrefs.GetInt("PlayDirect", 0) == 1)
-    {
-      PlayerPrefs.SetInt("PlayDirect", 0);
-      PlayRecordLog();
-    }
+
+    PrepareScene();
   }
   void GetLogFromPath(string path)
   {
@@ -88,7 +85,7 @@ public class DisplayRecordManager : MonoBehaviour
     return listNames;
   }
   //----------------------------------- Play record ----------------------------------
-  public void PlayRecordLog()
+  public void PrepareScene()
   {
     if (logPath == null)
     {
@@ -101,13 +98,11 @@ public class DisplayRecordManager : MonoBehaviour
     uiManager.DisplayTurnInfo(currentTurn, logs[currentTurn].serverGameState.blueScore, logs[currentTurn].serverGameState.redScore);
     InitGrid();
     InitCharacter();
-    StartCoroutine(PlayLogs());
   }
 
   IEnumerator PlayLogs(bool isContinue = false)
   {
     playRecordState = PlayRecordState.Playing;
-    uiManager.StartPlaying();
     if (!isContinue) currentTurn++;
     while (currentTurn < logs.Count)
     {
@@ -120,7 +115,6 @@ public class DisplayRecordManager : MonoBehaviour
 
   IEnumerator ChangeMap(int currentTurn)
   {
-    Debug.Log($"Current turn: {currentTurn}");
     var currentMap = logs[currentTurn].serverGameState.map;
     for (int row = 0; row < logs[currentTurn].serverGameState.mapWidth; row++)
     {
@@ -225,20 +219,19 @@ public class DisplayRecordManager : MonoBehaviour
 
   void InitGrid()
   {
-    GameObject cellObject = new GameObject();
+    GameObject cellTile = new GameObject("Cell");
+    GameObject cellObject = new GameObject("CellObject");
+
     cellObject.AddComponent<SpriteRenderer>();
-    //get the new cell size -> adjust the size of the cells to fit the size of the grid
+    cellTile.AddComponent<SpriteRenderer>();
+
     Vector2 newCellSize = new Vector2(gridSize.x / (float)cols, gridSize.y / (float)rows);
 
-    //Get the scales so you can scale the cells and change their size to fit the grid
     cellScale.x = newCellSize.x / cellSize.x;
     cellScale.y = newCellSize.y / cellSize.y;
+    cellSize = newCellSize;
+    cellTile.transform.localScale = new Vector2(cellScale.x, cellScale.y);
 
-    cellSize = newCellSize; //the size will be replaced by the new computed size, we just used cellSize for computing the scale
-
-    cellObject.transform.localScale = new Vector2(cellScale.x, cellScale.y);
-
-    //fix the cells to the grid by getting the half of the grid and cells add and minus experiment
     gridOffset.x = -(gridSize.x / 2) + cellSize.x / 2;
     gridOffset.y = -(gridSize.y / 2) + cellSize.y / 2;
 
@@ -248,19 +241,32 @@ public class DisplayRecordManager : MonoBehaviour
       var temp = new List<GameObject>();
       for (int row = rows - 1; row >= 0; row--)
       {
-        //add the cell size so that no two cells will have the same x and y position
         Vector2 pos = new Vector2(col * cellSize.x + gridOffset.x + transform.position.x, row * cellSize.y + gridOffset.y + transform.position.y);
-
-        //instantiate the game object, at position pos, with rotation set to identity
-        GameObject cO = Instantiate(cellObject, pos, Quaternion.identity) as GameObject;
+        GameObject cO = Instantiate(cellObject, pos, Quaternion.identity, gridTransform) as GameObject;
         cO.GetComponent<SpriteRenderer>().sprite = GetSpriteByTileType(mapInfo[col][rows - row - 1].type, mapInfo[col][rows - row - 1].growState);
-        //set the parent of the cell to GRID so you can move the cells together with the grid;
+        cO.GetComponent<SpriteRenderer>().sortingOrder = 1;
         cO.transform.parent = gridTransform;
         temp.Add(cO);
+
+        GameObject backgroundTile = Instantiate(cellTile, pos, Quaternion.identity, gridTransform);
+        backgroundTile.GetComponent<SpriteRenderer>().sprite = emptySprite;
+        Color color = Color.white;
+        if(row%2==0)
+        {
+          if(col%2==0) ColorUtility.TryParseHtmlString("#45A842", out color);
+          else ColorUtility.TryParseHtmlString("#5DBC59", out color);
+        }
+        else
+        {
+          if(col%2==0) ColorUtility.TryParseHtmlString("#5DBC59", out color);
+          else ColorUtility.TryParseHtmlString("#45A842", out color);
+        }
+        backgroundTile.GetComponent<SpriteRenderer>().color = color;
       }
       cellGOs.Add(temp);
     }
-    //destroy the object used to instantiate the cells
+
+    Destroy(cellTile);
     Destroy(cellObject);
   }
 
@@ -273,7 +279,9 @@ public class DisplayRecordManager : MonoBehaviour
       {
         var characterInfo = logs[currentTurn].serverGameState.characters[(Team)team][(CharacterRole)i];
         var cell = cellGOs[characterInfo.x][characterInfo.y];
-        GameObject characterGO = Instantiate(GetPrefabByRole((Team)team, (CharacterRole)i), cell.transform.position, Quaternion.identity) as GameObject;
+        GameObject characterGO = Instantiate(GetPrefabByRole((Team)team, (CharacterRole)i), cell.transform.position, Quaternion.identity, gridTransform);
+        var characterSprite = characterGO.GetComponent<SpriteRenderer>().sprite;
+        characterGO.transform.localScale = new Vector2(characterSize.x/characterSprite.bounds.size.x, characterSize.y/characterSprite.bounds.size.y);
         newDictionary.Add((CharacterRole)i, characterGO);
       }
       characterGOs.Add((Team)team, newDictionary);
@@ -289,7 +297,7 @@ public class DisplayRecordManager : MonoBehaviour
       case TileType.BLUE_ROCK:
         return blueRockSprite;
       case TileType.EMPTY:
-        return emptySprite;
+        return null;
       case TileType.IMPASSABLE:
         return impassableSprite;
       case TileType.PUMPKIN:
