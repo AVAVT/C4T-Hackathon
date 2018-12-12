@@ -115,13 +115,12 @@ public class DisplayRecordManager : MonoBehaviour
 
   IEnumerator ChangeMap(int currentTurn)
   {
-    Debug.Log("Change map");
     var currentMap = logs[currentTurn].serverGameState.map;
     for (int row = 0; row < logs[currentTurn].serverGameState.mapWidth; row++)
     {
       for (int col = 0; col < logs[currentTurn].serverGameState.mapHeight; col++)
       {
-        if (mapInfo[row][col].type != currentMap[row][col].type)
+        if (mapInfo[row][col].type != currentMap[row][col].type || mapInfo[row][col].growState != currentMap[row][col].growState)
         {
           mapInfo[row][col] = currentMap[row][col];
           cellGOs[row][col].GetComponent<SpriteRenderer>().sprite = GetSpriteByTileType(mapInfo[row][col].type, mapInfo[row][col].growState);

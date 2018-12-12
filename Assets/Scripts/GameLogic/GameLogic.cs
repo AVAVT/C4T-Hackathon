@@ -201,7 +201,6 @@ public class GameLogic
       if (currentTile.type == TileType.EMPTY)
       {
         currentTile.type = i == 0 ? TileType.TOMATO : TileType.PUMPKIN;
-        currentTile.growState++;
         serverGameState.map[character.x][character.y] = currentTile;
 
         var planter = serverGameState.characters[(Team)i][CharacterRole.Planter];
