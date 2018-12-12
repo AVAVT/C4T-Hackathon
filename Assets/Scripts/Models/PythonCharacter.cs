@@ -10,6 +10,7 @@ using UnityEngine;
 
 public class PythonCharacter : ICharacterController
 {
+  public IInputSceneUI uiManager;
   private Channel channel;
   private AIService.AIServiceClient client;
   private bool isTimedOut = false;
@@ -49,6 +50,7 @@ public class PythonCharacter : ICharacterController
     }
     catch (System.Exception ex)
     {
+      uiManager.ShowOutputText($"Get AI Response fail! Fail message: {ex}");
       UnityEngine.Debug.LogError($"Fail! Message: {ex}");
     }
   }
@@ -75,10 +77,12 @@ public class PythonCharacter : ICharacterController
         if (task.IsFaulted && !isValidAction(result))
         {
           UnityEngine.Debug.Log($"AI is crashed! Error: {task.Exception}");
+          uiManager.ShowOutputText($"Character: {Character.characterRole} - Team: {Character.team} is crashed! Error: {task.Exception}");
           isCrashed = true;
         }
         else if (task.IsCanceled || ct.IsCancellationRequested)
         {
+          uiManager.ShowOutputText($"Character: {Character.characterRole} - Team: {Character.team} is timeout!");
           UnityEngine.Debug.Log("Time out!");
           isTimedOut = true;
         }
@@ -98,14 +102,15 @@ public class PythonCharacter : ICharacterController
   {
     try
     {
-      AIResponse reply = client.ReturnAIResponse(new AIRequest {Index = (int)Character.team * 3 + (int)Character.characterRole, Json = json });
+      AIResponse reply = client.ReturnAIResponse(new AIRequest { Index = (int)Character.team * 3 + (int)Character.characterRole, Json = json });
       return reply.Action;
     }
     catch (System.Exception ex)
     {
+      uiManager.ShowOutputText($"Get AI Response fail! Fail message: {ex}");
       UnityEngine.Debug.LogError($"Fail! Message: {ex}");
+      return "STAY";
     }
-    return "STAY";
   }
 
   bool isValidAction(string action)

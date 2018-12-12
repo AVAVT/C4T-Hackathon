@@ -3,7 +3,7 @@ using System.Collections.Generic;
 [System.Serializable]
 public class ServerGameState
 {
-  public int turn = 1;
+  public int turn = 0;
   public int redScore = 0;
   public int blueScore = 0;
   public int mapWidth = GameConfigs.MAP_WIDTH;

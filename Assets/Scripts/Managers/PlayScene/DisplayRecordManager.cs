@@ -115,6 +115,7 @@ public class DisplayRecordManager : MonoBehaviour
 
   IEnumerator ChangeMap(int currentTurn)
   {
+    Debug.Log("Change map");
     var currentMap = logs[currentTurn].serverGameState.map;
     for (int row = 0; row < logs[currentTurn].serverGameState.mapWidth; row++)
     {
@@ -124,7 +125,7 @@ public class DisplayRecordManager : MonoBehaviour
         {
           mapInfo[row][col] = currentMap[row][col];
           cellGOs[row][col].GetComponent<SpriteRenderer>().sprite = GetSpriteByTileType(mapInfo[row][col].type, mapInfo[row][col].growState);
-          yield return null;
+          continue;
         }
         if (currentTurn == 0)
         {
@@ -145,6 +146,7 @@ public class DisplayRecordManager : MonoBehaviour
         }
       }
     }
+    yield return null;
   }
 
   IEnumerator ChangeCharacter(int currentTurn)
@@ -251,14 +253,14 @@ public class DisplayRecordManager : MonoBehaviour
         GameObject backgroundTile = Instantiate(cellTile, pos, Quaternion.identity, gridTransform);
         backgroundTile.GetComponent<SpriteRenderer>().sprite = emptySprite;
         Color color = Color.white;
-        if(row%2==0)
+        if (row % 2 == 0)
         {
-          if(col%2==0) ColorUtility.TryParseHtmlString("#45A842", out color);
+          if (col % 2 == 0) ColorUtility.TryParseHtmlString("#45A842", out color);
           else ColorUtility.TryParseHtmlString("#5DBC59", out color);
         }
         else
         {
-          if(col%2==0) ColorUtility.TryParseHtmlString("#5DBC59", out color);
+          if (col % 2 == 0) ColorUtility.TryParseHtmlString("#5DBC59", out color);
           else ColorUtility.TryParseHtmlString("#45A842", out color);
         }
         backgroundTile.GetComponent<SpriteRenderer>().color = color;
@@ -281,7 +283,7 @@ public class DisplayRecordManager : MonoBehaviour
         var cell = cellGOs[characterInfo.x][characterInfo.y];
         GameObject characterGO = Instantiate(GetPrefabByRole((Team)team, (CharacterRole)i), cell.transform.position, Quaternion.identity, gridTransform);
         var characterSprite = characterGO.GetComponent<SpriteRenderer>().sprite;
-        characterGO.transform.localScale = new Vector2(characterSize.x/characterSprite.bounds.size.x, characterSize.y/characterSprite.bounds.size.y);
+        characterGO.transform.localScale = new Vector2(characterSize.x / characterSprite.bounds.size.x, characterSize.y / characterSprite.bounds.size.y);
         newDictionary.Add((CharacterRole)i, characterGO);
       }
       characterGOs.Add((Team)team, newDictionary);

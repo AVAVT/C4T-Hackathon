@@ -76,37 +76,31 @@ public class IronpythonInputManager : MonoBehaviour
         tempPath = $"{Application.streamingAssetsPath}/blue_planter";
         Directory.CreateDirectory(tempPath);
         paths[index] = $"{tempPath}/main.py";
-        uiManager.ShowPathByIndex(index, path);
         return tempPath;
       case 1:
         tempPath = $"{Application.streamingAssetsPath}/blue_harvester";
         Directory.CreateDirectory(tempPath);
         paths[index] = $"{tempPath}/main.py";
-        uiManager.ShowPathByIndex(index, path);
         return tempPath;
       case 2:
         tempPath = $"{Application.streamingAssetsPath}/blue_worm";
         Directory.CreateDirectory(tempPath);
         paths[index] = $"{tempPath}/main.py";
-        uiManager.ShowPathByIndex(index, path);
         return tempPath;
       case 3:
         tempPath = $"{Application.streamingAssetsPath}/red_planter";
         Directory.CreateDirectory(tempPath);
         paths[index] = $"{tempPath}/main.py";
-        uiManager.ShowPathByIndex(index, path);
         return tempPath;
       case 4:
         tempPath = $"{Application.streamingAssetsPath}/red_harvester";
         Directory.CreateDirectory(tempPath);
         paths[index] = $"{tempPath}/main.py";
-        uiManager.ShowPathByIndex(index, path);
         return tempPath;
       case 5:
         tempPath = $"{Application.streamingAssetsPath}/red_worm";
         Directory.CreateDirectory(tempPath);
         paths[index] = $"{tempPath}/main.py";
-        uiManager.ShowPathByIndex(index, path);
         return tempPath;
       default:
         throw new System.Exception("Index of out bound!!!");

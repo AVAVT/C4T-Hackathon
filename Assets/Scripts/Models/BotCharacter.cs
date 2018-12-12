@@ -79,10 +79,13 @@ public class BotCharacter : ICharacterController
       if (task.IsFaulted)
       {
         isCrashed = true;
+        uiManager.ShowOutputText($"Character: {Character.characterRole} - Team: {Character.team} is crashed! Error: {task.Exception}");
+        uiManager.ShowOutputText($"Error: {task.Exception}");
       }
       else if (task.IsCanceled || ct.IsCancellationRequested)
       {
         isTimedOut = true;
+        uiManager.ShowOutputText($"Character: {Character.characterRole} - Team: {Character.team} is timeout!");
       }
       else
       {
@@ -248,7 +251,7 @@ public class BotCharacter : ICharacterController
         direction = Vector2.Zero;
         break;
     }
-    if(Character.x + direction.X >= GameConfigs.MAP_WIDTH
+    if (Character.x + direction.X >= GameConfigs.MAP_WIDTH
     || Character.x + direction.X < 0
     || Character.y + direction.Y >= GameConfigs.MAP_HEIGHT
     || Character.y + direction.Y < 0) return GetRandomDirection();
@@ -374,8 +377,8 @@ public class Node
   {
     int dstX = UnityEngine.Mathf.Abs(x - targetNode.x);
     int dstY = UnityEngine.Mathf.Abs(y - targetNode.y);
-    if(dstX > dstY) return 14*dstY + 10*(dstX - dstY);
-    else return 14*dstX + 10*(dstY - dstX);
+    if (dstX > dstY) return 14 * dstY + 10 * (dstX - dstY);
+    else return 14 * dstX + 10 * (dstY - dstX);
     // return dstX + dstY;
   }
 }

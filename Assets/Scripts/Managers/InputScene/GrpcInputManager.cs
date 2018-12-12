@@ -21,7 +21,9 @@ public class GrpcInputManager : MonoBehaviour
   [SerializeField] private string serverIP;
   [SerializeField] private int Port = 50051;
   private Channel channel;
+  private Process pythonProcess;
   private bool[] isBot;
+  private bool needStartServer = false;
   void Awake()
   {
     isBot = new bool[6];
@@ -30,30 +32,37 @@ public class GrpcInputManager : MonoBehaviour
       isBot[i] = true;
     }
     uiManager = GetComponent<InputSceneUI>();
-    uiManager.StartGame = StartRecordGame;
+    uiManager.StartGame = StartGame;
     uiManager.LoadAIFolder = OpenFileBrowser;
   }
 
-  private void OpenFileBrowser(int index)
+  private bool isFolderContainPython(string path)
   {
-    string path = FileBrowser.OpenSingleFolder("Choose AI folder");
-    LoadFileUsingPath(path, index);
+    foreach (var dir in Directory.GetFiles(path))
+    {
+      if (dir.Contains("main.py")) return true;
+    }
+    return false;
   }
 
-  // Loads a file using a path
-  private void LoadFileUsingPath(string path, int index)
+  public void OpenFileBrowser(int index)
   {
-    if (!String.IsNullOrEmpty(path))
+    string path = FileBrowser.OpenSingleFolder("Choose AI folder");
+    if (!String.IsNullOrEmpty(path) && isFolderContainPython(path))
     {
       var copyPath = GetPathByIndex(index, path);
       EmptyDirectory(copyPath);
       CopyAllDirectory(path, copyPath);
       uiManager.ShowOutputText($"Copied file to path: {copyPath}");
+      uiManager.ShowNotiPanel($"Import folder containing main.py successfully!");
+      uiManager.ShowFileStatus(index);
       isBot[index] = false;
+      needStartServer = true;
     }
     else
     {
       uiManager.ShowOutputText("Invalid path given");
+      uiManager.ShowNotiPanel("Invalid path given or folder does not contain main.py file!");
     }
   }
 
@@ -80,34 +89,28 @@ public class GrpcInputManager : MonoBehaviour
     switch (index)
     {
       case 0:
-        tempPath = $"{Application.streamingAssetsPath}/blue_planter";
-        Directory.CreateDirectory(tempPath);
-        uiManager.ShowPathByIndex(index, path);
-        return tempPath;
-      case 1:
-        tempPath = $"{Application.streamingAssetsPath}/blue_harvester";
-        Directory.CreateDirectory(tempPath);
-        uiManager.ShowPathByIndex(index, path);
-        return tempPath;
-      case 2:
-        tempPath = $"{Application.streamingAssetsPath}/blue_worm";
-        Directory.CreateDirectory(tempPath);
-        uiManager.ShowPathByIndex(index, path);
-        return tempPath;
-      case 3:
         tempPath = $"{Application.streamingAssetsPath}/red_planter";
         Directory.CreateDirectory(tempPath);
-        uiManager.ShowPathByIndex(index, path);
         return tempPath;
-      case 4:
+      case 1:
         tempPath = $"{Application.streamingAssetsPath}/red_harvester";
         Directory.CreateDirectory(tempPath);
-        uiManager.ShowPathByIndex(index, path);
         return tempPath;
-      case 5:
+      case 2:
         tempPath = $"{Application.streamingAssetsPath}/red_worm";
         Directory.CreateDirectory(tempPath);
-        uiManager.ShowPathByIndex(index, path);
+        return tempPath;
+      case 3:
+        tempPath = $"{Application.streamingAssetsPath}/blue_planter";
+        Directory.CreateDirectory(tempPath);
+        return tempPath;
+      case 4:
+        tempPath = $"{Application.streamingAssetsPath}/blue_harvester";
+        Directory.CreateDirectory(tempPath);
+        return tempPath;
+      case 5:
+        tempPath = $"{Application.streamingAssetsPath}/blue_worm";
+        Directory.CreateDirectory(tempPath);
         return tempPath;
       default:
         throw new System.Exception("Index of out bound!!!");
@@ -115,14 +118,8 @@ public class GrpcInputManager : MonoBehaviour
   }
 
   //-------------------------------------------- Read Python -------------------------------------------------
-  public void InitEngine()
+  public void InitCharacter()
   {
-    if (channel == null)
-    {
-      var ip = $"{serverIP}:{Port}";
-      channel = new Channel(ip, ChannelCredentials.Insecure);
-    }
-
     for (int i = 0; i < isBot.Length; i++)
     {
       if (!isBot[i])
@@ -130,24 +127,66 @@ public class GrpcInputManager : MonoBehaviour
         PythonCharacter character = new PythonCharacter(channel);
         character.Character = new Character();
         characters.Add(character);
+        character.uiManager = this.uiManager;
       }
       else
       {
         BotCharacter character = new BotCharacter($"Bot-{i + 1}");
         character.Character = new Character();
+        character.uiManager = this.uiManager;
         characters.Add(character);
       }
     }
   }
 
+  private IEnumerator StartServer()
+  {
+    if (channel == null)
+    {
+      var ip = $"{serverIP}:{Port}";
+      channel = new Channel(ip, ChannelCredentials.Insecure);
+    }
+
+    var pythonPath = PlayerPrefs.GetString("PythonPath");
+    if (!String.IsNullOrEmpty(pythonPath) && needStartServer)
+    {
+      var serverPath = $"{Application.streamingAssetsPath}/ai_server.py";
+      pythonProcess = new Process();
+      pythonProcess.StartInfo.FileName = pythonPath;
+      pythonProcess.StartInfo.Arguments = serverPath;
+
+      UnityEngine.Debug.Log(pythonPath);
+      UnityEngine.Debug.Log(serverPath);
+
+      pythonProcess.StartInfo.RedirectStandardOutput = true;
+      pythonProcess.StartInfo.RedirectStandardError = true;
+      pythonProcess.StartInfo.UseShellExecute = false;
+
+      while (!pythonProcess.Start())
+      {
+        yield return null;
+      }
+      StartRecordGame();
+    }
+    else
+    {
+      uiManager.ShowNotiPanel($"Following path to python.exe in settings is not valid: {pythonPath}");
+      UnityEngine.Debug.LogError($"Path to python.exe in settings is not valid! Path: {pythonPath}");
+    }
+  }
+
+  public void StartGame()
+  {
+    StartCoroutine(StartServer());
+  }
+
   async void StartRecordGame()
   {
-    InitEngine();
-
+    InitCharacter();
     GameLogic gameLogic = new GameLogic();
     var recordManager = gameObject.AddComponent<RecordManager>();
 
-    await gameLogic.StartGame(
+    var task = gameLogic.StartGame(
       characters[0],
       characters[1],
       characters[2],
@@ -156,8 +195,20 @@ public class GrpcInputManager : MonoBehaviour
       characters[5],
       recordManager
     );
-
-    // uiManager.ShowOutputText("End game!");
-    StartCoroutine(uiManager.StartLoadingPlayScene());
+    await task;
+    if (task.IsFaulted)
+    {
+      uiManager.ShowOutputText($"Start game fail! Error message: {task.Exception}");
+      uiManager.ShowRecordPanelWhenError();
+    }
+    else if (task.IsCanceled)
+    {
+      uiManager.ShowOutputText($"Start game fail! Start game task is canceled! Error message: {task.Exception}");
+      uiManager.ShowRecordPanelWhenError();
+    }
+    else
+    {
+      StartCoroutine(uiManager.StartLoadingPlayScene());
+    }
   }
 }

@@ -62,11 +62,10 @@ class AIServiceServicer(AI_Action_pb2_grpc.AIServiceServicer):
     AI_Action_pb2_grpc.add_AIServiceServicer_to_server(AIServiceServicer(), self.server)
     self.server.add_insecure_port('[::]:50051')
     self.server.start()
-    self.running = True
     print('Server is listening on port: 50051')
     try:
       while True:
-        time.sleep(60 * 60)
+        time.sleep(60 * 60 * 24)
     except KeyboardInterrupt:
       self.server.stop(0)
 
