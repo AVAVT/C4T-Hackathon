@@ -57,9 +57,17 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
     }
   }
 
+  public string ErrorMessage
+  {
+    get
+    {
+      return errorMessage;
+    }
+  }
+
   private Action startGame;
   private Action<int> loadAIFolder;
-
+  private string errorMessage;
   void Start()
   {
 // #if UNITY_EDITOR
@@ -85,9 +93,10 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
     }
   }
 
-  public void ShowOutputText(string text)
+  public void SaveErrorMessage(string text)
   {
-    outputText.text += text + "\n";
+    errorMessage += text + "\n";
+    // outputText.text += text + "\n";
   }
 
   //--------------------------------- Choose files --------------------------------------
@@ -131,15 +140,20 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
     characterStatus[index].sprite = readyStatusSprite;
   }
 
-  public void ShowNotiPanel(string text)
+  public void ShowNotiPanel(string text, float delay, float duration)
   {
+    DOTween.Complete(NotiPanel);
+    DOTween.Complete(NotiText);
+    
+    NotiPanel.color = Utilities.SetColorAlpha(NotiPanel.color, 1);
+    NotiText.color = Utilities.SetColorAlpha(NotiText.color, 1);
     NotiPanel.gameObject.SetActive(true);
     NotiText.text = text;
-    NotiPanel.DOColor(Utilities.SetColorAlpha(NotiPanel.color, 0), 3f);
-    NotiText.DOColor(Utilities.SetColorAlpha(NotiText.color, 0), 3f)
+    
+    NotiPanel.DOColor(Utilities.SetColorAlpha(NotiPanel.color, 0), duration).SetDelay(delay);
+    NotiText.DOColor(Utilities.SetColorAlpha(NotiText.color, 0), duration)
+    .SetDelay(delay)
     .OnComplete(() => {
-      Utilities.SetColorAlpha(NotiPanel.color, 1);
-      Utilities.SetColorAlpha(NotiText.color, 1);
       NotiPanel.gameObject.SetActive(false);
     });
   }
@@ -198,10 +212,10 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
     startGame?.Invoke();
   }
 
-  public void ShowRecordingProcess(float process)
+  public void ShowRecordingProcess(int currentTurn, int gameLength)
   {
-    loadingBar.fillAmount = process;
-    loadingProcessText.text = $"{Mathf.FloorToInt(process * 100)}%";
+    loadingBar.fillAmount = (float)currentTurn/(float)gameLength;
+    loadingProcessText.text = $"Recording Turn: {currentTurn}";
     if(tips.Length != 0) tipsText.text = $"Tips: {tips.RandomItem()}";
   }
 
@@ -238,6 +252,7 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
 
   public void ShowRecordPanelWhenError()
   {
+    outputText.text = errorMessage;
     recordingPanel.SetActive(true);
   }
   public void BackFromRecordPanel()

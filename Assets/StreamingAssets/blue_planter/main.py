@@ -31,5 +31,4 @@ class Character:
         self.isScared = game_state['allies'][self.characterRole]['isScared']
         self.performAction1 = game_state['allies'][self.characterRole]['performAction1']
         self.performAction2 = game_state['allies'][self.characterRole]['performAction2']
-        
-        return "STAY"
+        return "DOWN"   

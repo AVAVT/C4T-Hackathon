@@ -12,6 +12,11 @@ public static class GameConfigs
   public static readonly Vector2 BLUE_BOX_POS = new Vector2(MAP_WIDTH - 1, MAP_HEIGHT - 1);
   public static readonly Vector2 RED_ROCK_POS = new Vector2(0, MAP_HEIGHT - 1);
   public static readonly Vector2 BLUE_ROCK_POS = new Vector2(MAP_WIDTH - 1, 0);
+  public static readonly List<Vector2> WATER_POSES = new List<Vector2>()
+  {
+    new Vector2(2,1),
+    new Vector2(4,3)
+  };
 
   public static readonly List<Vector2> RED_STARTING_POSES = new List<Vector2>()
   {

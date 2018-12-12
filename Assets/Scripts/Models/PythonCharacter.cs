@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Grpc.Core;
-using Microsoft.Scripting.Hosting;
 using Newtonsoft.Json;
 using UnityEngine;
 
@@ -42,7 +41,6 @@ public class PythonCharacter : ICharacterController
 
   public void DoStart(GameState gameState)
   {
-    UnityEngine.Debug.Log($"{Character.characterRole.ToString()}: Do start!");
     string json = JsonConvert.SerializeObject(gameState);
     try
     {
@@ -50,14 +48,12 @@ public class PythonCharacter : ICharacterController
     }
     catch (System.Exception ex)
     {
-      uiManager.ShowOutputText($"Get AI Response fail! Fail message: {ex}");
-      UnityEngine.Debug.LogError($"Fail! Message: {ex}");
+      uiManager.SaveErrorMessage($"Get AI Response fail! Fail message: {ex}");
     }
   }
 
   public async Task<string> DoTurn(GameState gameState)
   {
-    UnityEngine.Debug.Log($"{Character.characterRole.ToString()}: Do turn!");
     UpdateCharacter(gameState);
 
     string result = Directions.STAY;
@@ -68,30 +64,23 @@ public class PythonCharacter : ICharacterController
       ct.Token.Register(() => tcs.TrySetCanceled(), useSynchronizationContext: false);
 
       string json = JsonConvert.SerializeObject(gameState);
-      Stopwatch sw = Stopwatch.StartNew();
+     
       await Task<string>.Factory.StartNew(() => GetAIResponse(json), ct.Token).ContinueWith((task) =>
       {
-        sw.Stop();
-        UnityEngine.Debug.Log(sw.ElapsedMilliseconds);
-
         if (task.IsFaulted && !isValidAction(result))
         {
-          UnityEngine.Debug.Log($"AI is crashed! Error: {task.Exception}");
-          uiManager.ShowOutputText($"Character: {Character.characterRole} - Team: {Character.team} is crashed! Error: {task.Exception}");
+          uiManager.SaveErrorMessage($"Character: {Character.characterRole} - Team: {Character.team} is crashed! Error: {task.Exception}");
           isCrashed = true;
         }
         else if (task.IsCanceled || ct.IsCancellationRequested)
         {
-          uiManager.ShowOutputText($"Character: {Character.characterRole} - Team: {Character.team} is timeout!");
-          UnityEngine.Debug.Log("Time out!");
+          uiManager.SaveErrorMessage($"Character: {Character.characterRole} - Team: {Character.team} is timeout!");
           isTimedOut = true;
         }
         else
         {
           ct.Cancel();
           result = task.Result;
-          UnityEngine.Debug.Log("Task completed!!!");
-          UnityEngine.Debug.Log($"Result: {result}");
         }
       });
     }
@@ -107,7 +96,7 @@ public class PythonCharacter : ICharacterController
     }
     catch (System.Exception ex)
     {
-      uiManager.ShowOutputText($"Get AI Response fail! Fail message: {ex}");
+      uiManager.SaveErrorMessage($"Get AI Response fail! Fail message: {ex}");
       UnityEngine.Debug.LogError($"Fail! Message: {ex}");
       return "STAY";
     }
@@ -130,7 +119,6 @@ public class PythonCharacter : ICharacterController
       if (ally.characterRole == Character.characterRole)
       {
         Character = ally;
-        UnityEngine.Debug.Log($"x: {Character.x} - y: {Character.y}");
       }
     }
   }

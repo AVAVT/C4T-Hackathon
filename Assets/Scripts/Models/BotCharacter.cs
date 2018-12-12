@@ -79,13 +79,10 @@ public class BotCharacter : ICharacterController
       if (task.IsFaulted)
       {
         isCrashed = true;
-        uiManager.ShowOutputText($"Character: {Character.characterRole} - Team: {Character.team} is crashed! Error: {task.Exception}");
-        uiManager.ShowOutputText($"Error: {task.Exception}");
       }
       else if (task.IsCanceled || ct.IsCancellationRequested)
       {
         isTimedOut = true;
-        uiManager.ShowOutputText($"Character: {Character.characterRole} - Team: {Character.team} is timeout!");
       }
       else
       {

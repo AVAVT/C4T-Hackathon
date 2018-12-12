@@ -8,7 +8,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Crosstales.FB;
 using Grpc.Core;
-using Microsoft.Scripting.Hosting;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,6 +23,7 @@ public class GrpcInputManager : MonoBehaviour
   private Process pythonProcess;
   private bool[] isBot;
   private bool needStartServer = false;
+  private int botNum = 0;
   void Awake()
   {
     isBot = new bool[6];
@@ -53,16 +53,16 @@ public class GrpcInputManager : MonoBehaviour
       var copyPath = GetPathByIndex(index, path);
       EmptyDirectory(copyPath);
       CopyAllDirectory(path, copyPath);
-      uiManager.ShowOutputText($"Copied file to path: {copyPath}");
-      uiManager.ShowNotiPanel($"Import folder containing main.py successfully!");
+      uiManager.SaveErrorMessage($"Copied file to path: {copyPath}");
+      uiManager.ShowNotiPanel($"Import folder containing main.py successfully!", 2, 1);
       uiManager.ShowFileStatus(index);
       isBot[index] = false;
       needStartServer = true;
     }
     else
     {
-      uiManager.ShowOutputText("Invalid path given");
-      uiManager.ShowNotiPanel("Invalid path given or folder does not contain main.py file!");
+      uiManager.SaveErrorMessage("Invalid path given");
+      uiManager.ShowNotiPanel("Invalid path given or folder does not contain main.py file!", 2, 1);
     }
   }
 
@@ -147,32 +147,57 @@ public class GrpcInputManager : MonoBehaviour
       channel = new Channel(ip, ChannelCredentials.Insecure);
     }
 
-    var pythonPath = PlayerPrefs.GetString("PythonPath");
-    if (!String.IsNullOrEmpty(pythonPath) && needStartServer)
+    if (needStartServer)
     {
-      var serverPath = $"{Application.streamingAssetsPath}/ai_server.py";
-      pythonProcess = new Process();
-      pythonProcess.StartInfo.FileName = pythonPath;
-      pythonProcess.StartInfo.Arguments = serverPath;
-
-      UnityEngine.Debug.Log(pythonPath);
-      UnityEngine.Debug.Log(serverPath);
-
-      pythonProcess.StartInfo.RedirectStandardOutput = true;
-      pythonProcess.StartInfo.RedirectStandardError = true;
-      pythonProcess.StartInfo.UseShellExecute = false;
-
-      while (!pythonProcess.Start())
+      var pythonPath = PlayerPrefs.GetString("PythonPath");
+      if (!String.IsNullOrEmpty(pythonPath))
       {
-        yield return null;
+        var serverPath = $"{Application.streamingAssetsPath}/ai_server.py";
+        pythonProcess = new Process();
+        pythonProcess.StartInfo.FileName = pythonPath;
+        pythonProcess.StartInfo.Arguments = serverPath;
+
+        pythonProcess.StartInfo.RedirectStandardOutput = true;
+        pythonProcess.StartInfo.RedirectStandardError = true;
+        pythonProcess.StartInfo.UseShellExecute = false;
+
+        while (!pythonProcess.Start())
+        {
+          yield return null;
+        }
       }
-      StartRecordGame();
+      else
+      {
+        uiManager.ShowNotiPanel($"Following path to python.exe in settings is not valid: {pythonPath}", 2, 1);
+        UnityEngine.Debug.LogError($"Path to python.exe in settings is not valid! Path: {pythonPath}");
+      }
     }
-    else
+
+    string botNoti = ShowBot();
+    UnityEngine.Debug.Log(botNum);
+    if (botNum != 0)
     {
-      uiManager.ShowNotiPanel($"Following path to python.exe in settings is not valid: {pythonPath}");
-      UnityEngine.Debug.LogError($"Path to python.exe in settings is not valid! Path: {pythonPath}");
+      uiManager.ShowNotiPanel(botNoti, 4, 1);
+      yield return new WaitForSeconds(4);
     }
+    StartRecordGame();
+  }
+
+  private string ShowBot()
+  {
+    string currentBots = "Following characters are controlled by bot:";
+    for (int team = 0; team < 2; team++)
+    {
+      for (int i = 0; i < 3; i++)
+      {
+        if (isBot[team * 3 + i])
+        {
+          currentBots += $"\nTeam: {(Team)team} - Character: {(CharacterRole)i}";
+          botNum++;
+        }
+      }
+    }
+    return currentBots;
   }
 
   public void StartGame()
@@ -198,17 +223,27 @@ public class GrpcInputManager : MonoBehaviour
     await task;
     if (task.IsFaulted)
     {
-      uiManager.ShowOutputText($"Start game fail! Error message: {task.Exception}");
+      uiManager.SaveErrorMessage($"Start game fail! Error message: {task.Exception}");
       uiManager.ShowRecordPanelWhenError();
     }
     else if (task.IsCanceled)
     {
-      uiManager.ShowOutputText($"Start game fail! Start game task is canceled! Error message: {task.Exception}");
+      uiManager.SaveErrorMessage($"Start game fail! Start game task is canceled! Error message: {task.Exception}");
       uiManager.ShowRecordPanelWhenError();
     }
     else
     {
-      StartCoroutine(uiManager.StartLoadingPlayScene());
+      if (String.IsNullOrEmpty(uiManager.ErrorMessage))
+        StartCoroutine(ShowLogPathNoti());
+      else
+        uiManager.ShowRecordPanelWhenError();
     }
+  }
+
+  IEnumerator ShowLogPathNoti()
+  {
+    uiManager.ShowNotiPanel($"Log file is saved to following path: {PlayerPrefs.GetString("LogPath", Application.streamingAssetsPath + "logs/")}", 4, 1);
+    yield return new WaitForSeconds(4);
+    yield return uiManager.StartLoadingPlayScene();
   }
 }

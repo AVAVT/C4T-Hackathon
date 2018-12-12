@@ -19,7 +19,6 @@ public class RecordManager : MonoBehaviour, IReplayRecorder
 
   public void LogEndGame(ServerGameState serverGameState)
   {
-    uiManager.ShowOutputText("Log End game!!!");
     var dateString = DateTime.Now;
     var fileName = $"log-{DateTime.Now.Day}{DateTime.Now.Month}{DateTime.Now.Year}-{DateTime.Now.Hour}{DateTime.Now.Minute}{DateTime.Now.Second}.json";
     if (!Directory.Exists(jsonFilePath))
@@ -27,15 +26,13 @@ public class RecordManager : MonoBehaviour, IReplayRecorder
 
     string json = JsonConvert.SerializeObject(log, Formatting.Indented);
     File.WriteAllText($"{jsonFilePath}/{fileName}", json);
-    uiManager.ShowOutputText($"Recorded into file: {jsonFilePath}/{fileName}");
+    uiManager.SaveErrorMessage($"Recorded into file: {jsonFilePath}/{fileName}");
     PlayerPrefs.SetString("LogPath", $"{jsonFilePath}/{fileName}");
-    PlayerPrefs.SetInt("PlayDirect", 1);
   }
 
 
   public void LogGameState(ServerGameState serverGameState)
   {
-    uiManager.ShowOutputText("Log Start game!!!");
     RecordModel recordModel = new RecordModel();
     recordModel.serverGameState = JsonConvert.DeserializeObject<ServerGameState>(JsonConvert.SerializeObject(serverGameState));
     recordModel.serverGameState.turn = 0;
@@ -46,8 +43,8 @@ public class RecordManager : MonoBehaviour, IReplayRecorder
 
   public void LogTurn(ServerGameState serverGameState, List<TurnAction> actions)
   {
-    uiManager.ShowOutputText($"Recorded turn: {serverGameState.turn}");
-    uiManager.ShowRecordingProcess((float)serverGameState.turn / (float)GameConfigs.GAME_LENGTH);
+    uiManager.SaveErrorMessage($"Recorded turn: {serverGameState.turn}");
+    uiManager.ShowRecordingProcess(serverGameState.turn, GameConfigs.GAME_LENGTH);
     RecordModel recordModel = new RecordModel();
     recordModel.serverGameState = JsonConvert.DeserializeObject<ServerGameState>(JsonConvert.SerializeObject(serverGameState));
     recordModel.actions = actions;

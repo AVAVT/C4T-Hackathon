@@ -393,6 +393,10 @@ public class GameLogic
           tile.type = TileType.WILDBERRY;
           tile.growState = GameConfigs.WILDBERRY_FRUIT_TIME;
         }
+        else if (GameConfigs.WATER_POSES.Any(pos => tile == pos))
+        {
+          tile.type = TileType.IMPASSABLE;
+        }
         else
           tile.type = TileType.EMPTY;
 

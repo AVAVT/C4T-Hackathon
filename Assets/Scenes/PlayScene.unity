@@ -14213,7 +14213,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   gridTransform: {fileID: 763072043}
   unknownSprite: {fileID: 0}
-  impassableSprite: {fileID: 21300000, guid: c3621c43f3d96a44d8823724de739f12, type: 3}
+  impassableSprite: {fileID: 21300000, guid: c761d1a8e314db745820c9c2a10cc0e2, type: 3}
   emptySprite: {fileID: 21300000, guid: f22e9da47ab0cc3449e2c313428c11d8, type: 3}
   redBoxSprite: {fileID: 21300000, guid: 249b2c40a271f1f4dbcbbc7a6eeb4c06, type: 3}
   redRockSprite: {fileID: 21300000, guid: e2e0e1fc02fb4d24c91559dbe2b04d1b, type: 3}
@@ -14231,17 +14231,17 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 40efa397c8b65d849b8dc7939eb4feb6, type: 3}
   - {fileID: 21300000, guid: 7864f8fb6be9b884ea85fbf9e797e132, type: 3}
   tomatoSprite:
-  - {fileID: 21300000, guid: a01afa8bc88ac5f4996d164728a90cce, type: 3}
-  - {fileID: 21300000, guid: ff93a1e66b6e06d4cb07abf0043c1f7f, type: 3}
-  - {fileID: 21300000, guid: 08e99d10537599c48bd234659e661ffe, type: 3}
-  - {fileID: 21300000, guid: 40efa397c8b65d849b8dc7939eb4feb6, type: 3}
-  - {fileID: 21300000, guid: fdeccdd8686306c42a28b8136415ee52, type: 3}
+  - {fileID: 21300000, guid: 1ad6beb5418a7fb40aba2e9f83adcfbb, type: 3}
+  - {fileID: 21300000, guid: e933fd427466c8a45b8b4f29075538f4, type: 3}
+  - {fileID: 21300000, guid: da73aecf30933ca4e9b20c24e3b8f74c, type: 3}
+  - {fileID: 21300000, guid: 36dc3f7f4552f7d41a46ec2f32c1b172, type: 3}
+  - {fileID: 21300000, guid: ea8982f32724b47418e0817b08994447, type: 3}
   pumpkinSprite:
-  - {fileID: 21300000, guid: a01afa8bc88ac5f4996d164728a90cce, type: 3}
-  - {fileID: 21300000, guid: ff93a1e66b6e06d4cb07abf0043c1f7f, type: 3}
-  - {fileID: 21300000, guid: 08e99d10537599c48bd234659e661ffe, type: 3}
-  - {fileID: 21300000, guid: 40efa397c8b65d849b8dc7939eb4feb6, type: 3}
-  - {fileID: 21300000, guid: 25fb0af32af7c99409e12b503bd5e805, type: 3}
+  - {fileID: 21300000, guid: 9e439eabdb19d10428029edcd158015b, type: 3}
+  - {fileID: 21300000, guid: c549e26221d15cb419fb43cfcf8b2bc6, type: 3}
+  - {fileID: 21300000, guid: 2c7e992003b3f6d49a62829157c2de41, type: 3}
+  - {fileID: 21300000, guid: e45e8950ed621d74e9a44e28e51fe7be, type: 3}
+  - {fileID: 21300000, guid: 28d718303a9605b449af09753b266058, type: 3}
   gridSize: {x: 1225, y: 875}
   gridOffset: {x: 1, y: 1}
   cellSize: {x: 1, y: 1}

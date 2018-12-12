@@ -25,6 +25,7 @@ public class DisplayRecordManager : MonoBehaviour
   [SerializeField] private Sprite[] pumpkinSprite;
   [SerializeField] private Vector2 gridSize, gridOffset;
   [SerializeField] private Vector2 cellSize;
+  private Vector2 newCellSize;
   private int rows, cols;
   List<List<Tile>> mapInfo = new List<List<Tile>>();
   private Vector2 cellScale;
@@ -32,7 +33,6 @@ public class DisplayRecordManager : MonoBehaviour
   private List<RecordModel> logs = new List<RecordModel>();
 
   [Header("Characters")]
-  [SerializeField] private Vector2 characterSize;
   [SerializeField] private GameObject redPlanterPrefab;
   [SerializeField] private GameObject redHarvesterPrefab;
   [SerializeField] private GameObject redWormPrefab;
@@ -113,8 +113,9 @@ public class DisplayRecordManager : MonoBehaviour
     }
   }
 
-  IEnumerator ChangeMap(int currentTurn)
+  void ChangeMap(int currentTurn)
   {
+    Debug.Log($"Change map turn {currentTurn}");
     var currentMap = logs[currentTurn].serverGameState.map;
     for (int row = 0; row < logs[currentTurn].serverGameState.mapWidth; row++)
     {
@@ -145,12 +146,10 @@ public class DisplayRecordManager : MonoBehaviour
         }
       }
     }
-    yield return null;
   }
 
   IEnumerator ChangeCharacter(int currentTurn)
   {
-    bool isFinishAnimation = false;
     var currentActions = logs[currentTurn].actions;
     if (currentActions != null)
     {
@@ -161,13 +160,11 @@ public class DisplayRecordManager : MonoBehaviour
         {
           //TODO: Show time out
           Debug.Log($"AI of {currentCharacter.characterRole} - team {currentCharacter.team} is time out!");
-          isFinishAnimation = true;
         }
         else if (action.crashed)
         {
           //TODO: Show is crashed
           Debug.Log($"AI of {currentCharacter.characterRole} - team {currentCharacter.team} is crashed!");
-          isFinishAnimation = true;
         }
         else
         {
@@ -176,29 +173,29 @@ public class DisplayRecordManager : MonoBehaviour
             var direction = DirectionStringExtension.ToDirectionVector(action.direction);
             if (direction.X != 0 || direction.Y != 0 && IsValidDirection(currentCharacter.x, currentCharacter.y, (int)direction.X, (int)direction.Y))
             {
+              ChangeFacingDirection(characterGOs[currentCharacter.team][currentCharacter.characterRole], currentCharacter.team, direction);
               characterGOs[currentCharacter.team][currentCharacter.characterRole].transform
                 .DOMove(cellGOs[currentCharacter.x + (int)direction.X][currentCharacter.y + (int)direction.Y].transform.position, turnTime)
-                .SetEase(Ease.InOutCubic)
+                .SetEase(Ease.InOutQuad)
                 .OnComplete(() =>
                 {
                   //TODO: Show dead animation if dead
-                  isFinishAnimation = true;
                 });
+              characterGOs[currentCharacter.team][currentCharacter.characterRole].transform
+                .DOScaleY(characterGOs[currentCharacter.team][currentCharacter.characterRole].transform.localScale.y - 0.02f, turnTime / 4)
+                .SetLoops(4, LoopType.Yoyo)
+                .SetEase(Ease.Linear);
             }
           }
           else
           {
             characterGOs[currentCharacter.team][currentCharacter.characterRole].transform.position = cellGOs[currentCharacter.x][currentCharacter.y].transform.position;
-            isFinishAnimation = true;
           }
         }
       }
     }
-    else
-    {
-      isFinishAnimation = true; //turn 0
-    }
-    yield return new WaitUntil(() => isFinishAnimation);
+    yield return new WaitForSeconds(turnTime);
+    Debug.Log("Setup new characters' pos!");
     for (int team = 0; team < 2; team++)
     {
       for (int i = 0; i < 3; i++)
@@ -208,7 +205,15 @@ public class DisplayRecordManager : MonoBehaviour
         characterGOs[currentCharacter.team][currentCharacter.characterRole].transform.position = cellGOs[currentCharacter.x][currentCharacter.y].transform.position;
       }
     }
-    yield return ChangeMap(currentTurn);
+    ChangeMap(currentTurn);
+  }
+
+  void ChangeFacingDirection(GameObject characterGO, Team team, System.Numerics.Vector2 direction)
+  {
+    if (direction.X == 1 && direction.Y == 0 && characterGO.transform.localScale.x <0)
+      characterGO.transform.localScale = characterGO.transform.localScale.WithX(-characterGO.transform.localScale.x);
+    if (direction.X == -1 && direction.Y == 0 && characterGO.transform.localScale.x >0)
+      characterGO.transform.localScale = characterGO.transform.localScale.WithX(-characterGO.transform.localScale.x);
   }
 
   bool IsValidDirection(int currentX, int currentY, int directionX, int directionY)
@@ -226,7 +231,7 @@ public class DisplayRecordManager : MonoBehaviour
     cellObject.AddComponent<SpriteRenderer>();
     cellTile.AddComponent<SpriteRenderer>();
 
-    Vector2 newCellSize = new Vector2(gridSize.x / (float)cols, gridSize.y / (float)rows);
+    newCellSize = new Vector2(gridSize.x / (float)cols, gridSize.y / (float)rows);
 
     cellScale.x = newCellSize.x / cellSize.x;
     cellScale.y = newCellSize.y / cellSize.y;
@@ -282,7 +287,7 @@ public class DisplayRecordManager : MonoBehaviour
         var cell = cellGOs[characterInfo.x][characterInfo.y];
         GameObject characterGO = Instantiate(GetPrefabByRole((Team)team, (CharacterRole)i), cell.transform.position, Quaternion.identity, gridTransform);
         var characterSprite = characterGO.GetComponent<SpriteRenderer>().sprite;
-        characterGO.transform.localScale = new Vector2(characterSize.x / characterSprite.bounds.size.x, characterSize.y / characterSprite.bounds.size.y);
+        characterGO.transform.localScale = new Vector2(newCellSize.x/ characterSprite.bounds.size.x, newCellSize.y / characterSprite.bounds.size.y);
         newDictionary.Add((CharacterRole)i, characterGO);
       }
       characterGOs.Add((Team)team, newDictionary);
