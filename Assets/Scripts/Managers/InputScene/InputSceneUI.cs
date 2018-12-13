@@ -57,6 +57,14 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
     }
   }
 
+  public bool HaveError
+  {
+    get
+    {
+      return haveError;
+    }
+  }
+
   public string ErrorMessage
   {
     get
@@ -68,6 +76,7 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
   private Action startGame;
   private Action<int> loadAIFolder;
   private string errorMessage;
+  private bool haveError = false;
   void Start()
   {
 // #if UNITY_EDITOR
@@ -93,8 +102,9 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
     }
   }
 
-  public void SaveErrorMessage(string text)
+  public void SaveErrorMessage(string text, bool haveError)
   {
+    if(haveError) this.haveError = true;
     errorMessage += text + "\n";
     // outputText.text += text + "\n";
   }

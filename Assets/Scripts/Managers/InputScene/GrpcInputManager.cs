@@ -53,7 +53,7 @@ public class GrpcInputManager : MonoBehaviour
       var copyPath = GetPathByIndex(index, path);
       EmptyDirectory(copyPath);
       CopyAllDirectory(path, copyPath);
-      uiManager.SaveErrorMessage($"Copied file to path: {copyPath}");
+      uiManager.SaveErrorMessage($"Copied file to path: {copyPath}", false);
       uiManager.ShowNotiPanel($"Import folder containing main.py successfully!", 2, 1);
       uiManager.ShowFileStatus(index);
       isBot[index] = false;
@@ -61,7 +61,6 @@ public class GrpcInputManager : MonoBehaviour
     }
     else
     {
-      uiManager.SaveErrorMessage("Invalid path given");
       uiManager.ShowNotiPanel("Invalid path given or folder does not contain main.py file!", 2, 1);
     }
   }
@@ -160,6 +159,10 @@ public class GrpcInputManager : MonoBehaviour
         pythonProcess.StartInfo.RedirectStandardOutput = true;
         pythonProcess.StartInfo.RedirectStandardError = true;
         pythonProcess.StartInfo.UseShellExecute = false;
+        pythonProcess.StartInfo.WorkingDirectory = Application.streamingAssetsPath;
+        pythonProcess.EnableRaisingEvents = true;
+        // pythonProcess.OutputDataReceived += new DataReceivedEventHandler(OnDataReceived);
+        // pythonProcess.ErrorDataReceived += new DataReceivedEventHandler(OnDataReceived);
 
         while (!pythonProcess.Start())
         {
@@ -223,17 +226,18 @@ public class GrpcInputManager : MonoBehaviour
     await task;
     if (task.IsFaulted)
     {
-      uiManager.SaveErrorMessage($"Start game fail! Error message: {task.Exception}");
+      uiManager.SaveErrorMessage($"Start game fail! Error message: {task.Exception}",true);
       uiManager.ShowRecordPanelWhenError();
     }
     else if (task.IsCanceled)
     {
-      uiManager.SaveErrorMessage($"Start game fail! Start game task is canceled! Error message: {task.Exception}");
+      uiManager.SaveErrorMessage($"Start game fail! Start game task is canceled! Error message: {task.Exception}", true);
       uiManager.ShowRecordPanelWhenError();
     }
     else
     {
-      if (String.IsNullOrEmpty(uiManager.ErrorMessage))
+      UnityEngine.Debug.Log(uiManager.HaveError);
+      if (!uiManager.HaveError)
         StartCoroutine(ShowLogPathNoti());
       else
         uiManager.ShowRecordPanelWhenError();

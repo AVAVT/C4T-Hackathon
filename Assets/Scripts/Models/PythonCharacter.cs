@@ -48,7 +48,7 @@ public class PythonCharacter : ICharacterController
     }
     catch (System.Exception ex)
     {
-      uiManager.SaveErrorMessage($"Get AI Response fail! Fail message: {ex}");
+      uiManager.SaveErrorMessage($"Get AI Response fail! Fail message: {ex}", true);
     }
   }
 
@@ -69,12 +69,12 @@ public class PythonCharacter : ICharacterController
       {
         if (task.IsFaulted && !isValidAction(result))
         {
-          uiManager.SaveErrorMessage($"Character: {Character.characterRole} - Team: {Character.team} is crashed! Error: {task.Exception}");
+          uiManager.SaveErrorMessage($"Character: {Character.characterRole} - Team: {Character.team} is crashed! Error: {task.Exception}", true);
           isCrashed = true;
         }
         else if (task.IsCanceled || ct.IsCancellationRequested)
         {
-          uiManager.SaveErrorMessage($"Character: {Character.characterRole} - Team: {Character.team} is timeout!");
+          uiManager.SaveErrorMessage($"Character: {Character.characterRole} - Team: {Character.team} is timeout!",true);
           isTimedOut = true;
         }
         else
@@ -96,7 +96,7 @@ public class PythonCharacter : ICharacterController
     }
     catch (System.Exception ex)
     {
-      uiManager.SaveErrorMessage($"Get AI Response fail! Fail message: {ex}");
+      uiManager.SaveErrorMessage($"Get AI Response fail! Fail message: {ex}", true);
       UnityEngine.Debug.LogError($"Fail! Message: {ex}");
       return "STAY";
     }

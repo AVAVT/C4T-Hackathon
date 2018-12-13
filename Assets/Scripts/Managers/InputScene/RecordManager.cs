@@ -26,7 +26,7 @@ public class RecordManager : MonoBehaviour, IReplayRecorder
 
     string json = JsonConvert.SerializeObject(log, Formatting.Indented);
     File.WriteAllText($"{jsonFilePath}/{fileName}", json);
-    uiManager.SaveErrorMessage($"Recorded into file: {jsonFilePath}/{fileName}");
+    uiManager.SaveErrorMessage($"Recorded into file: {jsonFilePath}/{fileName}",false);
     PlayerPrefs.SetString("LogPath", $"{jsonFilePath}/{fileName}");
   }
 
@@ -43,7 +43,7 @@ public class RecordManager : MonoBehaviour, IReplayRecorder
 
   public void LogTurn(ServerGameState serverGameState, List<TurnAction> actions)
   {
-    uiManager.SaveErrorMessage($"Recorded turn: {serverGameState.turn}");
+    uiManager.SaveErrorMessage($"Recorded turn: {serverGameState.turn}", false);
     uiManager.ShowRecordingProcess(serverGameState.turn, GameConfigs.GAME_LENGTH);
     RecordModel recordModel = new RecordModel();
     recordModel.serverGameState = JsonConvert.DeserializeObject<ServerGameState>(JsonConvert.SerializeObject(serverGameState));
