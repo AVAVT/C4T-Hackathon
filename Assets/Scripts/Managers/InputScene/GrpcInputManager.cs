@@ -14,16 +14,24 @@ using UnityEngine.UI;
 
 public class GrpcInputManager : MonoBehaviour
 {
+  public MapModel mapModel;
   public IInputSceneUI uiManager;
 
+  //characters
   List<ICharacterController> characters = new List<ICharacterController>();
+  private bool[] isBot;
+
+  //client
   [SerializeField] private string serverIP;
   [SerializeField] private int Port = 50051;
   private Channel channel;
   private Process pythonProcess;
-  private bool[] isBot;
-  private bool needStartServer = false;
-  private int botNum = 0;
+  private CancellationTokenSource tokenSource;
+  private CancellationToken cancellationToken;
+
+  //map
+  private int currentMap = 0;
+
   void Awake()
   {
     isBot = new bool[6];
@@ -34,6 +42,7 @@ public class GrpcInputManager : MonoBehaviour
     uiManager = GetComponent<InputSceneUI>();
     uiManager.StartGame = StartGame;
     uiManager.LoadAIFolder = OpenFileBrowser;
+    uiManager.ChangeMap = ChangeMap;
   }
 
   private bool isFolderContainPython(string path)
@@ -57,7 +66,6 @@ public class GrpcInputManager : MonoBehaviour
       uiManager.ShowNotiPanel($"Import folder containing main.py successfully!", 2, 1);
       uiManager.ShowFileStatus(index);
       isBot[index] = false;
-      needStartServer = true;
     }
     else
     {
@@ -117,7 +125,7 @@ public class GrpcInputManager : MonoBehaviour
   }
 
   //-------------------------------------------- Read Python -------------------------------------------------
-  public void InitCharacter()
+  public void InitCharacter(Map mapInfo)
   {
     for (int i = 0; i < isBot.Length; i++)
     {
@@ -127,14 +135,67 @@ public class GrpcInputManager : MonoBehaviour
         character.Character = new Character();
         characters.Add(character);
         character.uiManager = this.uiManager;
+        character.CancelStartGameTask = StopRecordGameWhenError;
       }
       else
       {
         BotCharacter character = new BotCharacter($"Bot-{i + 1}");
         character.Character = new Character();
         character.uiManager = this.uiManager;
+        character.mapInfo = mapInfo;
         characters.Add(character);
       }
+    }
+  }
+
+  private bool isHavingBot()
+  {
+    for (int i = 0; i < isBot.Length; i++)
+    {
+      if (isBot[i]) return true;
+    }
+    return false;
+  }
+
+  private bool NeedStartServer()
+  {
+    for (int i = 0; i < isBot.Length; i++)
+    {
+      if (!isBot[i]) return true;
+    }
+    return false;
+  }
+
+  private void InitMapInfo(Map mapInfo)
+  {
+    mapInfo.RED_BOX_POS = new System.Numerics.Vector2(0, 0);
+    mapInfo.BLUE_BOX_POS = new System.Numerics.Vector2(mapInfo.MAP_WIDTH - 1, mapInfo.MAP_HEIGHT - 1);
+    mapInfo.RED_ROCK_POS = new System.Numerics.Vector2(0, mapInfo.MAP_HEIGHT - 1);
+    mapInfo.BLUE_ROCK_POS = new System.Numerics.Vector2(mapInfo.MAP_WIDTH - 1, 0);
+
+    mapInfo.RED_STARTING_POSES = new List<System.Numerics.Vector2>()
+      {
+        mapInfo.RED_BOX_POS,
+        mapInfo.RED_BOX_POS,
+        mapInfo.RED_ROCK_POS
+      };
+    mapInfo.BLUE_STARTING_POSES = new List<System.Numerics.Vector2>()
+      {
+        mapInfo.BLUE_BOX_POS,
+        mapInfo.BLUE_BOX_POS,
+        mapInfo.BLUE_ROCK_POS
+      };
+
+    mapInfo.WATER_POSES = new List<System.Numerics.Vector2>();
+    foreach (var waterPos in mapInfo.WATER_POSES_UNITY)
+    {
+      mapInfo.WATER_POSES.Add(new System.Numerics.Vector2(waterPos.x, waterPos.y));
+    }
+
+    mapInfo.WILDBERRY_POSES = new List<System.Numerics.Vector2>();
+    foreach (var berryPos in mapInfo.WILDBERRY_POSES_UNITY)
+    {
+      mapInfo.WILDBERRY_POSES.Add(new System.Numerics.Vector2(berryPos.x, berryPos.y));
     }
   }
 
@@ -145,8 +206,8 @@ public class GrpcInputManager : MonoBehaviour
       var ip = $"{serverIP}:{Port}";
       channel = new Channel(ip, ChannelCredentials.Insecure);
     }
-
-    if (needStartServer)
+    string botNoti = ShowBot();
+    if (NeedStartServer())
     {
       var pythonPath = PlayerPrefs.GetString("PythonPath");
       if (!String.IsNullOrEmpty(pythonPath))
@@ -155,19 +216,20 @@ public class GrpcInputManager : MonoBehaviour
         pythonProcess = new Process();
         pythonProcess.StartInfo.FileName = pythonPath;
         pythonProcess.StartInfo.Arguments = serverPath;
-
         pythonProcess.StartInfo.RedirectStandardOutput = true;
         pythonProcess.StartInfo.RedirectStandardError = true;
         pythonProcess.StartInfo.UseShellExecute = false;
-        pythonProcess.StartInfo.WorkingDirectory = Application.streamingAssetsPath;
         pythonProcess.EnableRaisingEvents = true;
-        // pythonProcess.OutputDataReceived += new DataReceivedEventHandler(OnDataReceived);
-        // pythonProcess.ErrorDataReceived += new DataReceivedEventHandler(OnDataReceived);
+
+        pythonProcess.OutputDataReceived += new DataReceivedEventHandler(OnDataReceived);
+        pythonProcess.ErrorDataReceived += new DataReceivedEventHandler(OnErrorReceived);
 
         while (!pythonProcess.Start())
         {
           yield return null;
         }
+        pythonProcess.BeginOutputReadLine();
+        pythonProcess.BeginErrorReadLine();
       }
       else
       {
@@ -176,16 +238,31 @@ public class GrpcInputManager : MonoBehaviour
       }
     }
 
-    string botNoti = ShowBot();
-    UnityEngine.Debug.Log(botNum);
-    if (botNum != 0)
+    if (isHavingBot())
     {
       uiManager.ShowNotiPanel(botNoti, 4, 1);
       yield return new WaitForSeconds(4);
     }
-    StartRecordGame();
+
+    tokenSource = new CancellationTokenSource();
+    cancellationToken = tokenSource.Token;
+    StartRecordGame(cancellationToken);
   }
 
+  private void OnDataReceived(object sender, DataReceivedEventArgs e)
+  {
+    if (e.Data != null)
+    {
+      uiManager.SaveErrorMessage(e.Data, false);
+    }
+  }
+  private void OnErrorReceived(object sender, DataReceivedEventArgs e)
+  {
+    if (e.Data != null)
+    {
+      uiManager.SaveErrorMessage(e.Data, true);
+    }
+  }
   private string ShowBot()
   {
     string currentBots = "Following characters are controlled by bot:";
@@ -196,7 +273,6 @@ public class GrpcInputManager : MonoBehaviour
         if (isBot[team * 3 + i])
         {
           currentBots += $"\nTeam: {(Team)team} - Character: {(CharacterRole)i}";
-          botNum++;
         }
       }
     }
@@ -208,11 +284,21 @@ public class GrpcInputManager : MonoBehaviour
     StartCoroutine(StartServer());
   }
 
-  async void StartRecordGame()
+  public void StopRecordGameWhenError()
   {
-    InitCharacter();
-    GameLogic gameLogic = new GameLogic();
+    UnityEngine.Debug.Log("Cancel task!");
+    tokenSource.Cancel();
+    // tokenSource.Token.ThrowIfCancellationRequested();
+  }
+
+  async void StartRecordGame(CancellationToken token)
+  {
+    var mapInfo = mapModel.listMap[currentMap].mapConfig;
+    InitMapInfo(mapInfo);
+
+    var gameLogic = new GameLogic(mapInfo);
     var recordManager = gameObject.AddComponent<RecordManager>();
+    InitCharacter(mapInfo);
 
     var task = gameLogic.StartGame(
       characters[0],
@@ -221,12 +307,14 @@ public class GrpcInputManager : MonoBehaviour
       characters[3],
       characters[4],
       characters[5],
+      cancellationToken,
       recordManager
     );
+
     await task;
     if (task.IsFaulted)
     {
-      uiManager.SaveErrorMessage($"Start game fail! Error message: {task.Exception}",true);
+      uiManager.SaveErrorMessage($"Start game fail! Error message: {task.Exception}", true);
       uiManager.ShowRecordPanelWhenError();
     }
     else if (task.IsCanceled)
@@ -236,7 +324,6 @@ public class GrpcInputManager : MonoBehaviour
     }
     else
     {
-      UnityEngine.Debug.Log(uiManager.HaveError);
       if (!uiManager.HaveError)
         StartCoroutine(ShowLogPathNoti());
       else
@@ -246,8 +333,23 @@ public class GrpcInputManager : MonoBehaviour
 
   IEnumerator ShowLogPathNoti()
   {
-    uiManager.ShowNotiPanel($"Log file is saved to following path: {PlayerPrefs.GetString("LogPath", Application.streamingAssetsPath + "logs/")}", 4, 1);
+    uiManager.ShowNotiPanel($"Log file is saved to following path: {PlayerPrefs.GetString("LogPath")}", 4, 1);
     yield return new WaitForSeconds(4);
     yield return uiManager.StartLoadingPlayScene();
+  }
+
+  void ChangeMap(bool isNext)
+  {
+    if (isNext)
+    {
+      currentMap++;
+      if (currentMap >= mapModel.listMap.Count) currentMap = 0;
+    }
+    else
+    {
+      currentMap--;
+      if (currentMap < 0) currentMap = mapModel.listMap.Count - 1;
+    }
+    uiManager.ShowMapInfo(mapModel.listMap[currentMap].mapConfig);
   }
 }

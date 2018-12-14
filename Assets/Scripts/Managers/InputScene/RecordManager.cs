@@ -14,11 +14,11 @@ public class RecordManager : MonoBehaviour, IReplayRecorder
   void Awake()
   {
     uiManager = GetComponent<InputSceneUI>();
-    jsonFilePath = $"{Application.streamingAssetsPath}/logs";
   }
 
   public void LogEndGame(ServerGameState serverGameState)
   {
+    jsonFilePath = PlayerPrefs.GetString("SaveLogPath", $"{Application.streamingAssetsPath}/logs");
     var dateString = DateTime.Now;
     var fileName = $"log-{DateTime.Now.Day}{DateTime.Now.Month}{DateTime.Now.Year}-{DateTime.Now.Hour}{DateTime.Now.Minute}{DateTime.Now.Second}.json";
     if (!Directory.Exists(jsonFilePath))
@@ -26,10 +26,8 @@ public class RecordManager : MonoBehaviour, IReplayRecorder
 
     string json = JsonConvert.SerializeObject(log, Formatting.Indented);
     File.WriteAllText($"{jsonFilePath}/{fileName}", json);
-    uiManager.SaveErrorMessage($"Recorded into file: {jsonFilePath}/{fileName}",false);
     PlayerPrefs.SetString("LogPath", $"{jsonFilePath}/{fileName}");
   }
-
 
   public void LogGameState(ServerGameState serverGameState)
   {
@@ -39,7 +37,6 @@ public class RecordManager : MonoBehaviour, IReplayRecorder
     recordModel.actions = null;
     log.Add(recordModel);
   }
-
 
   public void LogTurn(ServerGameState serverGameState, List<TurnAction> actions)
   {

@@ -190,7 +190,7 @@ public class PlayRecordUI : MonoBehaviour, IPlaySceneUI
       blueTeamPanel.SetActive(false);
       redTeamPanel.SetActive(false);
       grid.SetActive(false);
-      
+
     }
     else
     {
@@ -204,10 +204,12 @@ public class PlayRecordUI : MonoBehaviour, IPlaySceneUI
   //-----------------------------------------------Button methods----------------------------------------------------
   public void NextButtonClick()
   {
+    StopButtonClick();
     nextTurn?.Invoke();
   }
   public void PrevButtonClick()
   {
+    StopButtonClick();
     prevTurn?.Invoke();
   }
   public void PlayButtonClick()
@@ -253,7 +255,6 @@ public class PlayRecordUI : MonoBehaviour, IPlaySceneUI
     turnInputField.text = 0 + "";
     turnSlider.value = 0;
     changeTurn?.Invoke(0);
-    playLog?.Invoke();
   }
 
   public void ToggleControlPanel()

@@ -6,8 +6,8 @@ public class ServerGameState
   public int turn = 0;
   public int redScore = 0;
   public int blueScore = 0;
-  public int mapWidth = GameConfigs.MAP_WIDTH;
-  public int mapHeight = GameConfigs.MAP_HEIGHT;
+  public int mapWidth;
+  public int mapHeight;
   public Dictionary<Team, Dictionary<CharacterRole, Character>> characters = new Dictionary<Team, Dictionary<CharacterRole, Character>>();
   public List<List<Tile>> map = new List<List<Tile>>();
 

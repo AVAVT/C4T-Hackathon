@@ -11,17 +11,20 @@ using System.IO;
 public class GameLogic
 {
   public ServerGameState ServerGameState { get; private set; }
+  MapBase mapInfo;
   List<ICharacterController> controllers = new List<ICharacterController>();
 
   /// <param name="replayGameState">Initial game state of a replay. Leave null to play new game.</param>
-  public GameLogic(ServerGameState replayGameState = null)
+  public GameLogic(MapBase mapInfo, ServerGameState replayGameState = null)
   {
     if (replayGameState == null)
     {
       ServerGameState = new ServerGameState();
-
-      InitializeCharacters(ServerGameState);
-      InitializeMap(ServerGameState);
+      ServerGameState.mapWidth = mapInfo.MAP_WIDTH;
+      ServerGameState.mapHeight = mapInfo.MAP_HEIGHT;
+      this.mapInfo = mapInfo;
+      InitializeCharacters(ServerGameState, mapInfo);
+      InitializeMap(ServerGameState, mapInfo);
     }
     else ServerGameState = replayGameState;
   }
@@ -35,6 +38,7 @@ public class GameLogic
     ICharacterController bluePlanterController,
     ICharacterController blueHarvesterController,
     ICharacterController blueWormController,
+    CancellationToken cancellationToken,
     IReplayRecorder recorder = null
   )
   {
@@ -62,7 +66,7 @@ public class GameLogic
     recorder?.LogGameState(ServerGameState);
     ServerGameState.turn++;
 
-    while (ServerGameState.turn < GameConfigs.GAME_LENGTH)
+    while (ServerGameState.turn < GameConfigs.GAME_LENGTH && !cancellationToken.IsCancellationRequested)
     {
       await PlayNextTurn(recorder);
     }
@@ -165,7 +169,7 @@ public class GameLogic
       {
         if (i == 0) serverGameState.redScore += character.harvest;
         else serverGameState.blueScore += character.harvest;
-        character.performAction2+= character.harvest;
+        character.performAction2 += character.harvest;
         character.harvest = 0;
         serverGameState.characters[(Team)i][CharacterRole.Harvester] = character;
       }
@@ -178,7 +182,7 @@ public class GameLogic
       var character = serverGameState.characters[(Team)i][CharacterRole.Harvester];
       var currentTile = serverGameState.map[character.x][character.y];
       var allyTileType = i == 0 ? TileType.TOMATO : TileType.PUMPKIN;
-      if ((currentTile.type == allyTileType && currentTile.growState == GameConfigs.PLANT_FRUIT_TIME) 
+      if ((currentTile.type == allyTileType && currentTile.growState == GameConfigs.PLANT_FRUIT_TIME)
       || (currentTile.type == TileType.WILDBERRY && currentTile.growState == GameConfigs.WILDBERRY_FRUIT_TIME))
       {
         currentTile.growState = 1;
@@ -251,7 +255,7 @@ public class GameLogic
       if (serverGameState.characters[(Team)i][CharacterRole.Planter].DistanceTo(serverGameState.characters[(Team)1 - i][CharacterRole.Worm]) == 0)
       {
         var worm = serverGameState.characters[(Team)1 - i][CharacterRole.Worm];
-        var rockPos = (1 - i) == 0 ? GameConfigs.RED_ROCK_POS : GameConfigs.BLUE_ROCK_POS;
+        var rockPos = (1 - i) == 0 ? mapInfo.RED_ROCK_POS : mapInfo.BLUE_ROCK_POS;
         worm.x = (int)rockPos.X;
         worm.y = (int)rockPos.Y;
         serverGameState.characters[(Team)1 - i][CharacterRole.Worm] = worm;
@@ -259,7 +263,7 @@ public class GameLogic
         var planter = serverGameState.characters[(Team)i][CharacterRole.Planter];
         planter.performAction2++;
         serverGameState.characters[(Team)i][CharacterRole.Planter] = planter;
-      } 
+      }
     }
   }
 
@@ -276,8 +280,8 @@ public class GameLogic
       else
         character.isScared = false;
 
-      character.x = Math.Max(Math.Min((int)newPos.X, GameConfigs.MAP_WIDTH - 1), 0);
-      character.y = Math.Max(Math.Min((int)newPos.Y, GameConfigs.MAP_HEIGHT - 1), 0);
+      character.x = Math.Max(Math.Min((int)newPos.X, mapInfo.MAP_WIDTH - 1), 0);
+      character.y = Math.Max(Math.Min((int)newPos.Y, mapInfo.MAP_HEIGHT - 1), 0);
 
       if (!IsInImpassableTile(ServerGameState, character))
       {
@@ -334,10 +338,10 @@ public class GameLogic
     return character.DistanceTo(serverGameState.map[character.x][character.y]) == 0 && serverGameState.map[character.x][character.y].type == TileType.IMPASSABLE;
   }
 
-  ServerGameState InitializeCharacters(ServerGameState gameState)
+  ServerGameState InitializeCharacters(ServerGameState gameState, MapBase mapInfo)
   {
-    InitializeTeam(Team.Red, gameState, GameConfigs.RED_STARTING_POSES);
-    InitializeTeam(Team.Blue, gameState, GameConfigs.BLUE_STARTING_POSES);
+    InitializeTeam(Team.Red, gameState, mapInfo.RED_STARTING_POSES);
+    InitializeTeam(Team.Blue, gameState, mapInfo.BLUE_STARTING_POSES);
 
     return gameState;
   }
@@ -359,41 +363,41 @@ public class GameLogic
     }
   }
 
-  ServerGameState InitializeMap(ServerGameState gameState)
+  ServerGameState InitializeMap(ServerGameState gameState, MapBase mapInfo)
   {
-    for (int x = 0; x < GameConfigs.MAP_WIDTH; x++)
+    for (int x = 0; x < mapInfo.MAP_WIDTH; x++)
     {
       gameState.map.Add(new List<Tile>());
-      for (int y = 0; y < GameConfigs.MAP_HEIGHT; y++)
+      for (int y = 0; y < mapInfo.MAP_HEIGHT; y++)
       {
         var tile = new Tile(x, y);
-        if (tile == GameConfigs.RED_BOX_POS)
+        if (tile == mapInfo.RED_BOX_POS)
         {
           tile.alwaysVisible = true;
           tile.type = TileType.RED_BOX;
         }
-        else if (tile == GameConfigs.BLUE_BOX_POS)
+        else if (tile == mapInfo.BLUE_BOX_POS)
         {
           tile.type = TileType.BLUE_BOX;
           tile.alwaysVisible = true;
         }
-        else if (tile == GameConfigs.BLUE_ROCK_POS)
+        else if (tile == mapInfo.BLUE_ROCK_POS)
         {
           tile.alwaysVisible = true;
           tile.type = TileType.BLUE_ROCK;
         }
-        else if (tile == GameConfigs.RED_ROCK_POS)
+        else if (tile == mapInfo.RED_ROCK_POS)
         {
           tile.alwaysVisible = true;
           tile.type = TileType.RED_ROCK;
         }
-        else if (GameConfigs.WILDBERRY_POS.Any(pos => tile == pos))
+        else if (mapInfo.WILDBERRY_POSES.Any(pos => tile == pos))
         {
           tile.alwaysVisible = true;
           tile.type = TileType.WILDBERRY;
           tile.growState = GameConfigs.WILDBERRY_FRUIT_TIME;
         }
-        else if (GameConfigs.WATER_POSES.Any(pos => tile == pos))
+        else if (mapInfo.WATER_POSES.Any(pos => tile == pos))
         {
           tile.type = TileType.IMPASSABLE;
         }
@@ -430,7 +434,7 @@ public static class ObjectExtensions
       return (T)formatter.Deserialize(stream);
     }
   }
-} 
+}
 
 // public class CloneableDictionary<TKey, TValue> : Dictionary<TKey, TValue> where TValue : ICloneable
 // {

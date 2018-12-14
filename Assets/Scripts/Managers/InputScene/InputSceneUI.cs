@@ -6,6 +6,9 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using DG.Tweening;
+using System.Diagnostics;
+using System.IO;
+
 public class InputSceneUI : MonoBehaviour, IInputSceneUI
 {
   [Header("UI Components")]
@@ -38,6 +41,7 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
   [SerializeField] private string[] tips;
   [Header("Setting panel")]
   [SerializeField] private InputField pythonPathText;
+  [SerializeField] private InputField saveLogPathText;
   [SerializeField] private TMP_Text errorText;
   [SerializeField] private GameObject btnSettingBack; //not show when first config
 
@@ -65,30 +69,64 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
     }
   }
 
-  public string ErrorMessage
+  public Action<bool> ChangeMap
   {
-    get
+    set
     {
-      return errorMessage;
+      changeMap = value;
     }
   }
 
   private Action startGame;
   private Action<int> loadAIFolder;
+  private Action<bool> changeMap;
   private string errorMessage;
   private bool haveError = false;
   void Start()
   {
-// #if UNITY_EDITOR
-//     PlayerPrefs.DeleteKey("HaveConfig");
-// #endif
+#if UNITY_EDITOR
+    PlayerPrefs.DeleteKey("HaveConfig");
+#endif
 
     if (PlayerPrefs.GetInt("HaveConfig", 0) == 0)
     {
-      startPanel.SetActive(false);
-      settingPanel.SetActive(true);
-      btnSettingBack.SetActive(false);
+      PlayerPrefs.SetString("SaveLogPath", $"{Application.streamingAssetsPath}/logs");
+      saveLogPathText.text = PlayerPrefs.GetString("SaveLogPath");
+      var pythonPath = GetPythonPathFromEnvironment();
+      if (pythonPath != "")
+      {
+        PlayerPrefs.SetString("PythonPath", $"{pythonPath}python.exe");
+        pythonPathText.text = PlayerPrefs.GetString("PythonPath");
+      }
+      else
+      {
+        PlayerPrefs.SetInt("HaveConfig", 1);
+        startPanel.SetActive(false);
+        settingPanel.SetActive(true);
+        btnSettingBack.SetActive(false);
+      }
     }
+    else
+    {
+      pythonPathText.text = PlayerPrefs.GetString("PythonPath");
+      saveLogPathText.text = PlayerPrefs.GetString("SaveLogPath");
+    }
+  }
+
+  string GetPythonPathFromEnvironment()
+  {
+    ProcessStartInfo startInfo = new ProcessStartInfo();
+    var pathString = startInfo.EnvironmentVariables["Path"];
+    var pathStringSplit = pathString.Split(';');
+    foreach (var pathAfterSplit in pathStringSplit)
+    {
+      if (pathAfterSplit.Contains("Python") && pathAfterSplit.Contains("3"))
+      {
+        var tempPathSplit = Path.GetDirectoryName(pathAfterSplit).Split('\\');
+        if (tempPathSplit[tempPathSplit.Length - 1].Contains("Python")) return pathAfterSplit;
+      }
+    }
+    return "";
   }
 
   private void SavePlayerName()
@@ -104,9 +142,12 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
 
   public void SaveErrorMessage(string text, bool haveError)
   {
-    if(haveError) this.haveError = true;
-    errorMessage += text + "\n";
-    // outputText.text += text + "\n";
+    if (haveError)
+    {
+      this.haveError = true;
+      errorMessage += text + Environment.NewLine;
+    }
+    if (!haveError && !this.haveError) errorMessage += text + "\n";
   }
 
   //--------------------------------- Choose files --------------------------------------
@@ -120,7 +161,7 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
     }
     else
     {
-      Debug.Log("Invalid path given or folder does not contain main.py file!");
+      UnityEngine.Debug.Log("Invalid path given or folder does not contain main.py file!");
     }
   }
 
@@ -132,7 +173,7 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
       pythonPathText.text = path;
       PlayerPrefs.SetString("PythonPath", path);
       PlayerPrefs.SetInt("HaveConfig", 1);
-      errorText.text = "Setup successfully!";
+      errorText.text = "Setup path to file python.exe successfully!";
       errorText.gameObject.SetActive(true);
       btnSettingBack.SetActive(true);
     }
@@ -140,7 +181,26 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
     {
       errorText.text = "Invalid path given or it is not a path to python.exe!";
       errorText.gameObject.SetActive(true);
-      Debug.Log("Invalid path given");
+      UnityEngine.Debug.Log("Invalid path given");
+    }
+  }
+
+  private void ChooseLogPathBrowser()
+  {
+    var path = FileBrowser.OpenSingleFolder("Choose directory to save your log files!", $"{Application.streamingAssetsPath}/logs");
+    if (!String.IsNullOrEmpty(path))
+    {
+      saveLogPathText.text = path;
+      PlayerPrefs.SetString("SaveLogPath", path);
+      PlayerPrefs.SetInt("HaveConfig", 1);
+      errorText.text = "Setup save log successfully!";
+      errorText.gameObject.SetActive(true);
+    }
+    else
+    {
+      errorText.text = "Invalid path given!";
+      errorText.gameObject.SetActive(true);
+      UnityEngine.Debug.Log("Invalid path given");
     }
   }
 
@@ -154,21 +214,36 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
   {
     DOTween.Complete(NotiPanel);
     DOTween.Complete(NotiText);
-    
+
     NotiPanel.color = Utilities.SetColorAlpha(NotiPanel.color, 1);
     NotiText.color = Utilities.SetColorAlpha(NotiText.color, 1);
     NotiPanel.gameObject.SetActive(true);
     NotiText.text = text;
-    
+
     NotiPanel.DOColor(Utilities.SetColorAlpha(NotiPanel.color, 0), duration).SetDelay(delay);
     NotiText.DOColor(Utilities.SetColorAlpha(NotiText.color, 0), duration)
     .SetDelay(delay)
-    .OnComplete(() => {
+    .OnComplete(() =>
+    {
       NotiPanel.gameObject.SetActive(false);
     });
   }
 
+  public void ShowMapInfo(Map mapInfo)
+  {
+    mapName.text = $"{mapInfo.MAP_NAME} ({mapInfo.MAP_WIDTH} x {mapInfo.MAP_HEIGHT})";
+    mapPreview.sprite = mapInfo.MAP_PREVIEW;
+  }
+
   //-------------------------------------- Button methods -----------------------------------------
+  public void NextMapButtonClick()
+  {
+    changeMap?.Invoke(true);
+  }
+  public void PrevMapButtonClick()
+  {
+    changeMap?.Invoke(false);
+  }
   public void LoadAIFolderButtonClick(int index)
   {
     loadAIFolder?.Invoke(index);
@@ -224,9 +299,9 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
 
   public void ShowRecordingProcess(int currentTurn, int gameLength)
   {
-    loadingBar.fillAmount = (float)currentTurn/(float)gameLength;
+    loadingBar.fillAmount = (float)currentTurn / (float)gameLength;
     loadingProcessText.text = $"Recording Turn: {currentTurn}";
-    if(tips.Length != 0) tipsText.text = $"Tips: {tips.RandomItem()}";
+    if (tips.Length != 0) tipsText.text = $"Tips: {tips.RandomItem()}";
   }
 
   public void BackFromInputPanel()
@@ -260,6 +335,11 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
     ChoosePythonBrowser();
   }
 
+  public void BrowseSaveLogPathButtonClick()
+  {
+    ChooseLogPathBrowser();
+  }
+
   public void ShowRecordPanelWhenError()
   {
     outputText.text = errorMessage;
@@ -267,6 +347,7 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
   }
   public void BackFromRecordPanel()
   {
+    outputText.text ="";
     recordingPanel.SetActive(false);
     loadingPanel.SetActive(false);
     inputPanel.SetActive(true);

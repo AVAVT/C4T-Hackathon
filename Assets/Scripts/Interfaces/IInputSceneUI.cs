@@ -11,6 +11,7 @@ public interface IInputSceneUI
   void ShowRecordPanelWhenError();
   Action StartGame{set;}
   Action<int> LoadAIFolder{set;}
-  string ErrorMessage{get;}
+  Action<bool> ChangeMap{set;}
+  void ShowMapInfo(Map mapInfo);
   bool HaveError{get;}
 }

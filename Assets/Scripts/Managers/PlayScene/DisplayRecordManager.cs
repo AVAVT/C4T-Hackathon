@@ -9,6 +9,7 @@ using DG.Tweening;
 public class DisplayRecordManager : MonoBehaviour
 {
   public IPlaySceneUI uiManager;
+  public IPlaySceneAudio soundManager;
   private string logPath;
 
   [Header("Map")]
@@ -42,6 +43,7 @@ public class DisplayRecordManager : MonoBehaviour
   private Dictionary<Team, Dictionary<CharacterRole, GameObject>> characterGOs = new Dictionary<Team, Dictionary<CharacterRole, GameObject>>();
   private Dictionary<Team, Dictionary<CharacterRole, Character>> characters = new Dictionary<Team, Dictionary<CharacterRole, Character>>();
   private List<string> listNames = new List<string>();
+  public Sprite emoCrash, emoTimeOut, emoFear, emoDie;
 
 
   [Header("Playing records")]
@@ -115,7 +117,6 @@ public class DisplayRecordManager : MonoBehaviour
 
   void ChangeMap(int currentTurn)
   {
-    Debug.Log($"Change map turn {currentTurn}");
     var currentMap = logs[currentTurn].serverGameState.map;
     for (int row = 0; row < logs[currentTurn].serverGameState.mapWidth; row++)
     {
@@ -156,22 +157,27 @@ public class DisplayRecordManager : MonoBehaviour
       foreach (var action in currentActions)
       {
         var currentCharacter = characters[action.team][action.role];
+
         if (action.timedOut)
         {
           //TODO: Show time out
           Debug.Log($"AI of {currentCharacter.characterRole} - team {currentCharacter.team} is time out!");
+          characterGOs[action.team][action.role].GetComponent<DisplayCharacter>().StartShowCharacterNoti(1, emoTimeOut);
+          soundManager.PlaySound("Boink");
         }
         else if (action.crashed)
         {
           //TODO: Show is crashed
           Debug.Log($"AI of {currentCharacter.characterRole} - team {currentCharacter.team} is crashed!");
+          characterGOs[action.team][action.role].GetComponent<DisplayCharacter>().StartShowCharacterNoti(1, emoCrash);
+          soundManager.PlaySound("Klonk");
         }
         else
         {
           if (playRecordState == PlayRecordState.Playing)
           {
             var direction = DirectionStringExtension.ToDirectionVector(action.direction);
-            if (direction.X != 0 || direction.Y != 0 && IsValidDirection(currentCharacter.x, currentCharacter.y, (int)direction.X, (int)direction.Y))
+            if (IsValidDirection(currentCharacter.x, currentCharacter.y, (int)direction.X, (int)direction.Y))
             {
               ChangeFacingDirection(characterGOs[currentCharacter.team][currentCharacter.characterRole], currentCharacter.team, direction);
               characterGOs[currentCharacter.team][currentCharacter.characterRole].transform
@@ -194,8 +200,30 @@ public class DisplayRecordManager : MonoBehaviour
         }
       }
     }
-    yield return new WaitForSeconds(turnTime);
-    Debug.Log("Setup new characters' pos!");
+
+    if (playRecordState == PlayRecordState.Playing) yield return new WaitForSeconds(turnTime);
+    CheckCharacterWithServer();
+    ChangeMap(currentTurn);
+  }
+
+  void CheckCharacterWithServer()
+  {
+    for (int team = 0; team < 2; team++)
+    {
+      for (int i = 0; i < 3; i++)
+      {
+        var serverCharacter = logs[currentTurn].serverGameState.characters[(Team)team][(CharacterRole)i];
+        if (characters[(Team)team][(CharacterRole)i].isScared)
+        {
+          characterGOs[(Team)team][(CharacterRole)i].GetComponent<DisplayCharacter>().StartShowCharacterNoti(1, emoFear);
+        }
+
+        if (i == 2 && characterGOs[(Team)team][(CharacterRole)i].transform.position == characterGOs[(Team)(1 - team)][0].transform.position)
+        {
+          characterGOs[(Team)team][(CharacterRole)i].GetComponent<DisplayCharacter>().StartShowCharacterNoti(1, emoDie);
+        }
+      }
+    }
     for (int team = 0; team < 2; team++)
     {
       for (int i = 0; i < 3; i++)
@@ -205,22 +233,24 @@ public class DisplayRecordManager : MonoBehaviour
         characterGOs[currentCharacter.team][currentCharacter.characterRole].transform.position = cellGOs[currentCharacter.x][currentCharacter.y].transform.position;
       }
     }
-    ChangeMap(currentTurn);
   }
 
   void ChangeFacingDirection(GameObject characterGO, Team team, System.Numerics.Vector2 direction)
   {
-    if (direction.X == 1 && direction.Y == 0 && characterGO.transform.localScale.x <0)
+    if (direction.X == 1 && direction.Y == 0 && characterGO.transform.localScale.x < 0)
       characterGO.transform.localScale = characterGO.transform.localScale.WithX(-characterGO.transform.localScale.x);
-    if (direction.X == -1 && direction.Y == 0 && characterGO.transform.localScale.x >0)
+    if (direction.X == -1 && direction.Y == 0 && characterGO.transform.localScale.x > 0)
       characterGO.transform.localScale = characterGO.transform.localScale.WithX(-characterGO.transform.localScale.x);
   }
 
   bool IsValidDirection(int currentX, int currentY, int directionX, int directionY)
   {
-    if (currentX + directionX >= cols || currentX + directionX < 0) return false;
-    if (currentY + directionY >= rows || currentY + directionY < 0) return false;
-    return true;
+    if (currentX + directionX >= 0
+      && currentX + directionX < cols
+      && currentY + directionY >= 0
+      && currentY + directionY < rows)
+      return true;
+    return false;
   }
 
   void InitGrid()
@@ -287,7 +317,8 @@ public class DisplayRecordManager : MonoBehaviour
         var cell = cellGOs[characterInfo.x][characterInfo.y];
         GameObject characterGO = Instantiate(GetPrefabByRole((Team)team, (CharacterRole)i), cell.transform.position, Quaternion.identity, gridTransform);
         var characterSprite = characterGO.GetComponent<SpriteRenderer>().sprite;
-        characterGO.transform.localScale = new Vector2(newCellSize.x/ characterSprite.bounds.size.x, newCellSize.y / characterSprite.bounds.size.y);
+        characterGO.transform.localScale = new Vector2(newCellSize.x / characterSprite.bounds.size.x, newCellSize.y / characterSprite.bounds.size.y);
+        characterGO.GetComponent<DisplayCharacter>().characterNoti.SetActive(false);
         newDictionary.Add((CharacterRole)i, characterGO);
       }
       characterGOs.Add((Team)team, newDictionary);
@@ -356,9 +387,10 @@ public class DisplayRecordManager : MonoBehaviour
 
   private void StopPlayRecord()
   {
-    playRecordState = PlayRecordState.Stop;
-    DOTween.CompleteAll();
     StopAllCoroutines();
+    playRecordState = PlayRecordState.Stop;
+    StartCoroutine(ChangeCharacter(currentTurn));
+    DOTween.CompleteAll();
   }
 
   private void PrevButtonClick()

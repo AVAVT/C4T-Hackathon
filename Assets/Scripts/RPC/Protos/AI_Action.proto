@@ -18,13 +18,4 @@ message AIRequest {
 message AIResponse {
   string action = 1;
 }
-
-// The request message to shutdown server
-message ShutdownRequest {
-  
-}
-
-// The response message containing server's status
-message ShutdownResponse {
-  string status = 1;
 }
