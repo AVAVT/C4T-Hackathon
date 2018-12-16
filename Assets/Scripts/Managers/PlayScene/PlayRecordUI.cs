@@ -25,10 +25,11 @@ public class PlayRecordUI : MonoBehaviour, IPlaySceneUI
   [SerializeField] private Button stopButton;
   [SerializeField] private List<float> listGameSpeed;
   [SerializeField] private Transform toggleControlPanelButton;
+
   [Header("Score panel")]
   [SerializeField] private TMP_Text redScoreText;
   [SerializeField] private TMP_Text blueScoreText;
-  [SerializeField] private Image blueScoreImage;
+  [SerializeField] private Image redScoreImage;
   [SerializeField] private Image compareImage;
   [SerializeField] private Sprite redGreaterImage;
   [SerializeField] private Sprite blueGreaterImage;
@@ -37,9 +38,11 @@ public class PlayRecordUI : MonoBehaviour, IPlaySceneUI
   [SerializeField] private GameObject redTeamPanel;
   [SerializeField] private GameObject blueTeamPanel;
   [SerializeField] private List<TMP_Text> listNameText;
+  [SerializeField] private List<TMP_Text> listStatusText;
+
   [Header("Result panel")]
-  [SerializeField] private TMP_Text resultRedTeamText;
-  [SerializeField] private TMP_Text resultBlueTeamText;
+  [SerializeField] private Text resultRedTeamText;
+  [SerializeField] private Text resultBlueTeamText;
   [SerializeField] private TMP_Text[] resultCharacterNames;
   [SerializeField] private TMP_Text[] performedAction1;
   [SerializeField] private TMP_Text[] performedAction2;
@@ -107,19 +110,19 @@ public class PlayRecordUI : MonoBehaviour, IPlaySceneUI
     redScoreText.text = redScore.ToString();
     blueScoreText.text = blueScore.ToString();
     if (redScore != 0 || blueScore != 0)
-      blueScoreImage.fillAmount = blueScore / (redScore + blueScore);
+      redScoreImage.fillAmount = redScore / (redScore + blueScore);
     else
-      blueScoreImage.fillAmount = 0.5f;
+      redScoreImage.fillAmount = 0.5f;
 
     compareImage.gameObject.SetActive(true);
     if (blueScore == redScore) compareImage.gameObject.SetActive(false);
     else if (blueScore > redScore) compareImage.sprite = blueGreaterImage;
     else compareImage.sprite = redGreaterImage;
 
-    compareImage.rectTransform.anchoredPosition = compareImage.rectTransform.anchoredPosition.WithX(blueScoreImage.fillAmount * blueScoreImage.rectTransform.sizeDelta.x);
+    compareImage.rectTransform.anchoredPosition = compareImage.rectTransform.anchoredPosition.WithX(redScoreImage.fillAmount * redScoreImage.rectTransform.sizeDelta.x);
     if (compareImage.rectTransform.anchoredPosition.x <= compareImage.rectTransform.sizeDelta.x / 2)
       compareImage.rectTransform.anchoredPosition = compareImage.rectTransform.anchoredPosition.WithX(compareImage.rectTransform.sizeDelta.x / 2);
-    var maxX = blueScoreImage.rectTransform.sizeDelta.x - compareImage.rectTransform.sizeDelta.x / 2;
+    var maxX = redScoreImage.rectTransform.sizeDelta.x - compareImage.rectTransform.sizeDelta.x / 2;
     if (compareImage.rectTransform.anchoredPosition.x >= maxX)
       compareImage.rectTransform.anchoredPosition = compareImage.rectTransform.anchoredPosition.WithX(maxX);
   }
@@ -151,10 +154,10 @@ public class PlayRecordUI : MonoBehaviour, IPlaySceneUI
     //find win team
     if (logs[logs.Count - 1].serverGameState.blueScore == 0 && logs[logs.Count - 1].serverGameState.redScore == 0)
     {
-      resultBlueTeamText.text = "Defeated";
-      resultBlueTeamText.fontStyle = FontStyles.Normal;
-      resultRedTeamText.text = "Defeated";
-      resultRedTeamText.fontStyle = FontStyles.Normal;
+      resultBlueTeamText.text = "Draw";
+      resultBlueTeamText.GetComponent<Outline>().effectColor = new Color(248, 124, 3);
+      resultRedTeamText.text = "Draw";
+      resultRedTeamText.GetComponent<Outline>().effectColor = new Color(248, 124, 3);
     }
     else
     {
@@ -165,21 +168,24 @@ public class PlayRecordUI : MonoBehaviour, IPlaySceneUI
         if (logs[checkTurn].serverGameState.blueScore > logs[checkTurn].serverGameState.redScore) winTeam = Team.Blue;
         else if (logs[checkTurn].serverGameState.blueScore > logs[checkTurn].serverGameState.redScore) winTeam = Team.Red;
       }
+      resultBlueTeamText.GetComponent<Outline>().effectColor = new Color(18, 151, 254);
+      resultRedTeamText.GetComponent<Outline>().effectColor = new Color(218, 0, 52);
       if (winTeam == Team.Blue)
       {
         resultBlueTeamText.text = "Victory!";
-        resultBlueTeamText.fontStyle = FontStyles.UpperCase;
         resultRedTeamText.text = "Defeated";
-        resultRedTeamText.fontStyle = FontStyles.Normal;
       }
       else
       {
         resultRedTeamText.text = "Victory!";
-        resultRedTeamText.fontStyle = FontStyles.UpperCase;
         resultBlueTeamText.text = "Defeated";
-        resultBlueTeamText.fontStyle = FontStyles.Normal;
       }
     }
+  }
+
+  public void DisplayCharacterStatus(int index, string status)
+  {
+    listStatusText[index].text = status;
   }
 
   public void ToggleResult(bool isShowingResult)
@@ -262,7 +268,7 @@ public class PlayRecordUI : MonoBehaviour, IPlaySceneUI
     if (showingControlPanel)
     {
       showingControlPanel = false;
-      (controlPanel.transform as RectTransform).DOAnchorPosY(-175, 0.5f)
+      (controlPanel.transform as RectTransform).DOAnchorPosY(-135, 0.5f)
       .SetEase(Ease.InOutQuad)
       .OnStart(() => controlPanel.GetComponent<CanvasGroup>().interactable = false)
       .OnComplete(() =>
@@ -274,7 +280,7 @@ public class PlayRecordUI : MonoBehaviour, IPlaySceneUI
     else
     {
       showingControlPanel = true;
-      (controlPanel.transform as RectTransform).DOAnchorPosY(-25, 0.5f)
+      (controlPanel.transform as RectTransform).DOAnchorPosY(0, 0.5f)
       .SetEase(Ease.InOutQuad)
       .OnStart(() => controlPanel.GetComponent<CanvasGroup>().interactable = false)
       .OnComplete(() =>

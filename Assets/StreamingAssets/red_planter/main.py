@@ -45,7 +45,7 @@ class Character:
         self.y = game_state['allies'][self.characterRole]['y']
         self.harvest = game_state['allies'][self.characterRole]['harvest']
         self.isScared = game_state['allies'][self.characterRole]['isScared']
-        self.performAction1 = game_ate['allies'][self.characterRole]['performAction1']
+        self.performAction1 = game_state['allies'][self.characterRole]['performAction1']
         self.performAction2 = game_state['allies'][self.characterRole]['performAction2']
         if self.x == game_state['allies'][1]['x'] and self.y == game_state['allies'][1]['y']:
             return "RIGHT"

@@ -12,4 +12,5 @@ public interface IPlaySceneUI
   void ToggleResult(bool isShowingResult);
   void DisplayTurnInfo(int currentTurn, int blueScore, int redScore);
   void DisplayGameInfo(List<string> listNames, List<RecordModel> logs);
+  void DisplayCharacterStatus(int index, string status);
 }

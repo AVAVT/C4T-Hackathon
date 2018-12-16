@@ -145,9 +145,9 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
     if (haveError)
     {
       this.haveError = true;
-      errorMessage += text + Environment.NewLine;
+      errorMessage += text + Environment.NewLine + Environment.NewLine;
     }
-    if (!haveError && !this.haveError) errorMessage += text + "\n";
+    if (!haveError && !this.haveError) errorMessage += text + Environment.NewLine + Environment.NewLine;
   }
 
   //--------------------------------- Choose files --------------------------------------
@@ -267,8 +267,13 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
 
   public void LastRecordButtonClick()
   {
-    playRecordPanel.SetActive(false);
-    StartCoroutine(StartLoadingPlayScene());
+    if (File.Exists(PlayerPrefs.GetString("LogPath")))
+    {
+      playRecordPanel.SetActive(false);
+      StartCoroutine(StartLoadingPlayScene());
+    }
+    else
+      ShowNotiPanel("Have not recorded any log file or the file has been deleted!", 2, 1);
   }
 
   public void ChooseRecordButtonClick()
@@ -347,7 +352,7 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
   }
   public void BackFromRecordPanel()
   {
-    outputText.text ="";
+    outputText.text = "";
     recordingPanel.SetActive(false);
     loadingPanel.SetActive(false);
     inputPanel.SetActive(true);

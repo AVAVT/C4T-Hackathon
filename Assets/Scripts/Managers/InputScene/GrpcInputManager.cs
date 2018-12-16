@@ -49,7 +49,7 @@ public class GrpcInputManager : MonoBehaviour
   {
     foreach (var dir in Directory.GetFiles(path))
     {
-      if (dir.Contains("main.py")) return true;
+      if(Path.GetFileName(dir).Equals("main.py")) return true;
     }
     return false;
   }
@@ -334,6 +334,8 @@ public class GrpcInputManager : MonoBehaviour
   IEnumerator ShowLogPathNoti()
   {
     uiManager.ShowNotiPanel($"Log file is saved to following path: {PlayerPrefs.GetString("LogPath")}", 4, 1);
+    pythonProcess.Kill();
+    pythonProcess.Dispose();
     yield return new WaitForSeconds(4);
     yield return uiManager.StartLoadingPlayScene();
   }
