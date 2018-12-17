@@ -579,7 +579,7 @@ PlayerSettings:
   webGLCompressionFormat: 1
   webGLLinkerTarget: 1
   scriptingDefineSymbols:
-    1: CT_FB
+    1: CT_FB;ODIN_INSPECTOR
     19: CT_FB
   platformArchitecture: {}
   scriptingBackend:
