@@ -9,7 +9,6 @@ using DG.Tweening;
 public class DisplayRecordManager : MonoBehaviour
 {
   public IPlaySceneUI uiManager;
-  public IPlaySceneAudio soundManager;
   private string logPath;
 
   [Header("Map")]
@@ -162,15 +161,15 @@ public class DisplayRecordManager : MonoBehaviour
         {
           //TODO: Show time out
           Debug.Log($"AI of {currentCharacter.characterRole} - team {currentCharacter.team} is time out!");
-          characterGO.GetComponent<DisplayCharacter>().StartShowCharacterNoti(1, emoTimeOut);
-          soundManager.PlaySound("Boink");
+          characterGOs[action.team][action.role].GetComponent<DisplayCharacter>().StartShowCharacterNoti(1, emoTimeOut);
+          uiManager.DisplayCharacterStatus((int)action.team * 3 + (int)action.role, "Time out");
         }
         else if (action.crashed)
         {
           //TODO: Show is crashed
           Debug.Log($"AI of {currentCharacter.characterRole} - team {currentCharacter.team} is crashed!");
-          characterGO.GetComponent<DisplayCharacter>().StartShowCharacterNoti(1, emoCrash);
-          soundManager.PlaySound("Klonk");
+          characterGOs[action.team][action.role].GetComponent<DisplayCharacter>().StartShowCharacterNoti(1, emoCrash);
+          uiManager.DisplayCharacterStatus((int)action.team * 3 + (int)action.role, "Crashed");
         }
         else
         {

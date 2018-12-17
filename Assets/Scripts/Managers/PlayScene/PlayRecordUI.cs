@@ -39,13 +39,14 @@ public class PlayRecordUI : MonoBehaviour, IPlaySceneUI
   [SerializeField] private GameObject blueTeamPanel;
   [SerializeField] private List<TMP_Text> listNameText;
   [SerializeField] private List<TMP_Text> listStatusText;
+  [SerializeField] private List<Image> listFadeAva;
 
   [Header("Result panel")]
   [SerializeField] private Text resultRedTeamText;
   [SerializeField] private Text resultBlueTeamText;
   [SerializeField] private TMP_Text[] resultCharacterNames;
   [SerializeField] private TMP_Text[] performedAction1;
-  [SerializeField] private TMP_Text[] performedAction2;
+  [SerializeField] private TMP_Text[] performedAction2;  
 
   //private actions
   private int currentSpeed = 1;
@@ -187,6 +188,8 @@ public class PlayRecordUI : MonoBehaviour, IPlaySceneUI
   public void DisplayCharacterStatus(int index, string status)
   {
     listStatusText[index].text = status;
+    if(status == "Time out" || status == "Crashed")
+      listFadeAva[index].gameObject.SetActive(true);
   }
 
   public void ToggleResult(bool isShowingResult)
