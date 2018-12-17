@@ -2,8 +2,8 @@ using System.Threading.Tasks;
 
 public interface ICharacterController
 {
-  void DoStart(GameState gameState);
-  Task<string> DoTurn(GameState gameState);
+  Task DoStart(GameState gameState, GameRule gameRule);
+  Task<string> DoTurn(GameState gameState, GameRule gameRule);
   Character Character { get; set; }
   bool IsTimedOut { get; }
   bool IsCrashed { get; }

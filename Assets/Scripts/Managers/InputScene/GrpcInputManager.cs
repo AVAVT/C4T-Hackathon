@@ -18,7 +18,7 @@ public class GrpcInputManager : MonoBehaviour
   public IInputSceneUI uiManager;
 
   //characters
-  List<ICharacterController> characters = new List<ICharacterController>();
+  Dictionary<Team, Dictionary<CharacterRole, ICharacterController>> characters = new Dictionary<Team, Dictionary<CharacterRole, ICharacterController>>();
   private bool[] isBot;
 
   //client
@@ -49,7 +49,7 @@ public class GrpcInputManager : MonoBehaviour
   {
     foreach (var dir in Directory.GetFiles(path))
     {
-      if(Path.GetFileName(dir).Equals("main.py")) return true;
+      if (Path.GetFileName(dir).Equals("main.py")) return true;
     }
     return false;
   }
@@ -125,27 +125,37 @@ public class GrpcInputManager : MonoBehaviour
   }
 
   //-------------------------------------------- Read Python -------------------------------------------------
-  public void InitCharacter(Map mapInfo)
+  public Dictionary<Team, Dictionary<CharacterRole, ICharacterController>> InitCharacter(MapInfo mapInfo, GameRule gameRule)
   {
-    for (int i = 0; i < isBot.Length; i++)
+    var controllers = new Dictionary<Team, Dictionary<CharacterRole, ICharacterController>>();
+
+    int botIndex = 0; // TODO change bot to use the same configurable system as controllers
+    foreach (var team in gameRule.availableTeams)
     {
-      if (!isBot[i])
+      foreach (var role in gameRule.availableRoles)
       {
-        PythonCharacter character = new PythonCharacter(channel);
-        character.Character = new Character();
-        characters.Add(character);
-        character.uiManager = this.uiManager;
-        character.CancelStartGameTask = StopRecordGameWhenError;
-      }
-      else
-      {
-        BotCharacter character = new BotCharacter($"Bot-{i + 1}");
-        character.Character = new Character();
-        character.uiManager = this.uiManager;
-        character.mapInfo = mapInfo;
-        characters.Add(character);
+        if (!isBot[botIndex])
+        {
+          PythonCharacter character = new PythonCharacter(channel);
+          character.uiManager = this.uiManager;
+          character.CancelStartGameTask = StopRecordGameWhenError;
+
+          controllers[team][role] = character;
+        }
+        else
+        {
+          BotCharacter character = new BotCharacter($"Bot-{botIndex + 1}");
+          character.uiManager = this.uiManager;
+          character.mapInfo = mapInfo;
+
+          controllers[team][role] = character;
+        }
+
+        botIndex++;
       }
     }
+
+    return controllers;
   }
 
   private bool isHavingBot()
@@ -164,39 +174,6 @@ public class GrpcInputManager : MonoBehaviour
       if (!isBot[i]) return true;
     }
     return false;
-  }
-
-  private void InitMapInfo(Map mapInfo)
-  {
-    mapInfo.RED_BOX_POS = new System.Numerics.Vector2(0, 0);
-    mapInfo.BLUE_BOX_POS = new System.Numerics.Vector2(mapInfo.MAP_WIDTH - 1, mapInfo.MAP_HEIGHT - 1);
-    mapInfo.RED_ROCK_POS = new System.Numerics.Vector2(0, mapInfo.MAP_HEIGHT - 1);
-    mapInfo.BLUE_ROCK_POS = new System.Numerics.Vector2(mapInfo.MAP_WIDTH - 1, 0);
-
-    mapInfo.RED_STARTING_POSES = new List<System.Numerics.Vector2>()
-      {
-        mapInfo.RED_BOX_POS,
-        mapInfo.RED_BOX_POS,
-        mapInfo.RED_ROCK_POS
-      };
-    mapInfo.BLUE_STARTING_POSES = new List<System.Numerics.Vector2>()
-      {
-        mapInfo.BLUE_BOX_POS,
-        mapInfo.BLUE_BOX_POS,
-        mapInfo.BLUE_ROCK_POS
-      };
-
-    mapInfo.WATER_POSES = new List<System.Numerics.Vector2>();
-    foreach (var waterPos in mapInfo.WATER_POSES_UNITY)
-    {
-      mapInfo.WATER_POSES.Add(new System.Numerics.Vector2(waterPos.x, waterPos.y));
-    }
-
-    mapInfo.WILDBERRY_POSES = new List<System.Numerics.Vector2>();
-    foreach (var berryPos in mapInfo.WILDBERRY_POSES_UNITY)
-    {
-      mapInfo.WILDBERRY_POSES.Add(new System.Numerics.Vector2(berryPos.x, berryPos.y));
-    }
   }
 
   private IEnumerator StartServer()
@@ -293,25 +270,25 @@ public class GrpcInputManager : MonoBehaviour
 
   async void StartRecordGame(CancellationToken token)
   {
-    var mapInfo = mapModel.listMap[currentMap].mapConfig;
-    InitMapInfo(mapInfo);
+    GameRule gameRule = GameRule.DefaultGameRule();
 
-    var gameLogic = new GameLogic(mapInfo);
+    var mapInfo = mapModel.listMap[currentMap].mapDisplayData.ToMapInfo(gameRule);
+
+    var gameLogic = GameLogic.GameLogicForPlay(gameRule, mapInfo);
     var recordManager = gameObject.AddComponent<RecordManager>();
-    InitCharacter(mapInfo);
+    // TODO record game rule
 
-    var task = gameLogic.StartGame(
-      characters[0],
-      characters[1],
-      characters[2],
-      characters[3],
-      characters[4],
-      characters[5],
+    characters = InitCharacter(mapInfo, gameRule);
+
+    gameLogic.InitializeGame(characters);
+
+    var task = gameLogic.PlayGame(
       cancellationToken,
       recordManager
     );
 
     await task;
+
     if (task.IsFaulted)
     {
       uiManager.SaveErrorMessage($"Start game fail! Error message: {task.Exception}", true);
@@ -352,6 +329,6 @@ public class GrpcInputManager : MonoBehaviour
       currentMap--;
       if (currentMap < 0) currentMap = mapModel.listMap.Count - 1;
     }
-    uiManager.ShowMapInfo(mapModel.listMap[currentMap].mapConfig);
+    uiManager.ShowMapInfo(mapModel.listMap[currentMap].mapDisplayData);
   }
 }

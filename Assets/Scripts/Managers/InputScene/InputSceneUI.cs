@@ -229,10 +229,10 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
     });
   }
 
-  public void ShowMapInfo(Map mapInfo)
+  public void ShowMapInfo(MapDisplayData mapInfo)
   {
-    mapName.text = $"{mapInfo.MAP_NAME} ({mapInfo.MAP_WIDTH} x {mapInfo.MAP_HEIGHT})";
-    mapPreview.sprite = mapInfo.MAP_PREVIEW;
+    mapName.text = $"{mapInfo.mapName} ({mapInfo.tiles.Count} x {mapInfo.tiles[0].Count})";
+    mapPreview.sprite = mapInfo.mapPreview;
   }
 
   //-------------------------------------- Button methods -----------------------------------------

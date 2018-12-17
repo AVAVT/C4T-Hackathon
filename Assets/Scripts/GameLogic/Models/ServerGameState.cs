@@ -6,12 +6,10 @@ public class ServerGameState
   public int turn = 0;
   public int redScore = 0;
   public int blueScore = 0;
-  public int mapWidth;
-  public int mapHeight;
   public Dictionary<Team, Dictionary<CharacterRole, Character>> characters = new Dictionary<Team, Dictionary<CharacterRole, Character>>();
   public List<List<Tile>> map = new List<List<Tile>>();
 
-  public GameState GameStateForTeam(Team team)
+  public GameState GameStateForTeam(Team team, GameRule gameRule)
   {
     var result = new GameState(turn, team);
 
@@ -20,7 +18,7 @@ public class ServerGameState
     {
       foreach (var ally in result.allies)
       {
-        if (enemy.DistanceTo(ally) <= GameConfigs.SIGHT_DISTANCE)
+        if (enemy.DistanceTo(ally) <= gameRule.sightDistance)
         {
           result.enemies.Add(enemy);
           break;
@@ -46,7 +44,7 @@ public class ServerGameState
           bool visible = false;
           foreach (var ally in result.allies)
           {
-            if (ally.DistanceTo(teamTile) <= GameConfigs.SIGHT_DISTANCE)
+            if (ally.DistanceTo(teamTile) <= gameRule.sightDistance)
             {
               visible = true;
               break;

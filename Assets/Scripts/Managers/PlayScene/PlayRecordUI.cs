@@ -146,6 +146,7 @@ public class PlayRecordUI : MonoBehaviour, IPlaySceneUI
     {
       for (int i = 0; i < 3; i++)
       {
+        // TODO Tung
         performedAction1[team * 3 + i].text = lastTurnCharacters[(Team)team][(CharacterRole)i].performAction1 + "";
         performedAction2[team * 3 + i].text = lastTurnCharacters[(Team)team][(CharacterRole)i].performAction2 + "";
       }

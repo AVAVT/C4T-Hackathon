@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 public class BotCharacter : ICharacterController
 {
-  public Map mapInfo;
+  public MapInfo mapInfo;
   public IInputSceneUI uiManager;
   string name;
   private bool isTimedOut = false;
@@ -27,7 +27,7 @@ public class BotCharacter : ICharacterController
     }
   }
 
-  private Func<GameState, string> DoThink;
+  private Func<GameState, GameRule, string> DoThink;
   private List<List<Node>> listNodes = new List<List<Node>>();
   private Node nextNode;
 
@@ -51,9 +51,10 @@ public class BotCharacter : ICharacterController
     }
   }
 
-  public void DoStart(GameState gameState)
+  public async Task DoStart(GameState gameState, GameRule gameRule)
   {
-    //convert map to grid node
+    // TODO use the same timeout config as DoTurn
+    // TODO convert map to grid node
     foreach (var row in gameState.map)
     {
       List<Node> nodeRow = new List<Node>();
@@ -66,7 +67,7 @@ public class BotCharacter : ICharacterController
     }
   }
 
-  public async Task<string> DoTurn(GameState gameState)
+  public async Task<string> DoTurn(GameState gameState, GameRule gameRule)
   {
     UpdateCharacter(gameState);
 
@@ -75,7 +76,7 @@ public class BotCharacter : ICharacterController
     ct.Token.Register(() => tcs.TrySetCanceled(), useSynchronizationContext: false);
 
     string result = Directions.STAY;
-    await Task.Factory.StartNew(() => DoThink?.Invoke(gameState)).ContinueWith((task) =>
+    await Task.Factory.StartNew(() => DoThink?.Invoke(gameState, gameRule)).ContinueWith((task) =>
     {
       if (task.IsFaulted)
       {
@@ -105,7 +106,7 @@ public class BotCharacter : ICharacterController
     }
   }
 
-  public string DoPlanterThink(GameState gameState)
+  public string DoPlanterThink(GameState gameState, GameRule gameRule)
   {
     bool needChaseWorm = false;
     Vector2 wormPos = Vector2.Zero;
@@ -129,20 +130,20 @@ public class BotCharacter : ICharacterController
     }
   }
 
-  public string DoHarvesterThink(GameState gameState)
+  public string DoHarvesterThink(GameState gameState, GameRule gameRule)
   {
     bool needComeBack = false;
-    if (Character.harvest >= 5) needComeBack = true;
+    if (Character.fruitCarrying >= 5) needComeBack = true;
 
     if (needComeBack)
     {
-      nextNode = MoveToPos(new Vector2(Character.x, Character.y), Character.team == Team.Blue ? mapInfo.BLUE_BOX_POS : mapInfo.RED_BOX_POS);
+      nextNode = MoveToPos(new Vector2(Character.x, Character.y), mapInfo.startingPositions[Character.team][CharacterRole.Harvester]);
       return DirectionStringExtension.ToDirectionString(new Vector2(nextNode.x, nextNode.y) - new Vector2(Character.x, Character.y));
     }
     else
     {
-      var closestHarvestTree = GetClosestTileType(gameState, Character.team == 0 ? TileType.TOMATO : TileType.PUMPKIN, GameConfigs.PLANT_FRUIT_TIME);
-      var closestHarvestWildBerry = GetClosestTileType(gameState, TileType.WILDBERRY, GameConfigs.WILDBERRY_FRUIT_TIME);
+      var closestHarvestTree = GetClosestTileType(gameState, Character.team == 0 ? TileType.TOMATO : TileType.PUMPKIN, gameRule.plantFruitTime);
+      var closestHarvestWildBerry = GetClosestTileType(gameState, TileType.WILDBERRY, gameRule.wildberryFruitTime);
       if (closestHarvestTree.type != TileType.EMPTY)
       {
         nextNode = MoveToPos(new Vector2(Character.x, Character.y), new Vector2(closestHarvestTree.x, closestHarvestTree.y));
@@ -157,7 +158,7 @@ public class BotCharacter : ICharacterController
     }
   }
 
-  public string DoWormThink(GameState gameState)
+  public string DoWormThink(GameState gameState, GameRule gameRule)
   {
     Vector2 harvesterPos = Vector2.Zero;
     bool needChase = false;
@@ -249,9 +250,9 @@ public class BotCharacter : ICharacterController
         direction = Vector2.Zero;
         break;
     }
-    if (Character.x + direction.X >= mapInfo.MAP_WIDTH
+    if (Character.x + direction.X >= mapInfo.tiles.Count
     || Character.x + direction.X < 0
-    || Character.y + direction.Y >= mapInfo.MAP_HEIGHT
+    || Character.y + direction.Y >= mapInfo.tiles[0].Count
     || Character.y + direction.Y < 0) return GetRandomDirection();
     else return DirectionStringExtension.ToDirectionString(direction);
   }
@@ -330,8 +331,8 @@ public class BotCharacter : ICharacterController
     for (int i = -1; i < 2; i++)
     {
       if (i == 0) continue;
-      if (currentNode.x + i >= 0 && currentNode.x + i < mapInfo.MAP_WIDTH) neighbours.Add(listNodes[currentNode.x + i][currentNode.y]);
-      if (currentNode.y + i >= 0 && currentNode.y + i < mapInfo.MAP_HEIGHT) neighbours.Add(listNodes[currentNode.x][currentNode.y + i]);
+      if (currentNode.x + i >= 0 && currentNode.x + i < mapInfo.tiles.Count) neighbours.Add(listNodes[currentNode.x + i][currentNode.y]);
+      if (currentNode.y + i >= 0 && currentNode.y + i < mapInfo.tiles[0].Count) neighbours.Add(listNodes[currentNode.x][currentNode.y + i]);
     }
     return neighbours;
   }
@@ -342,8 +343,8 @@ public class BotCharacter : ICharacterController
     for (int i = -1; i < 2; i++)
     {
       if (i == 0) continue;
-      if (currentTile.x + i >= 0 && currentTile.x + i < mapInfo.MAP_WIDTH) neighbours.Add(gameState.map[currentTile.x + i][currentTile.y]);
-      if (currentTile.y + i >= 0 && currentTile.y + i < mapInfo.MAP_HEIGHT) neighbours.Add(gameState.map[currentTile.x][currentTile.y + i]);
+      if (currentTile.x + i >= 0 && currentTile.x + i < mapInfo.tiles.Count) neighbours.Add(gameState.map[currentTile.x + i][currentTile.y]);
+      if (currentTile.y + i >= 0 && currentTile.y + i < mapInfo.tiles[0].Count) neighbours.Add(gameState.map[currentTile.x][currentTile.y + i]);
     }
     return neighbours;
   }

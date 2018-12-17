@@ -71,8 +71,8 @@ public class DisplayRecordManager : MonoBehaviour
     string json = File.ReadAllText(path);
     logs = JsonConvert.DeserializeObject<List<RecordModel>>(json);
     mapInfo = logs[currentTurn].serverGameState.map;
-    rows = logs[currentTurn].serverGameState.mapHeight;
-    cols = logs[currentTurn].serverGameState.mapWidth;
+    rows = logs[currentTurn].serverGameState.map[0].Count;
+    cols = logs[currentTurn].serverGameState.map.Count;
     characters = logs[currentTurn].serverGameState.characters;
   }
 
@@ -118,9 +118,9 @@ public class DisplayRecordManager : MonoBehaviour
   void ChangeMap(int currentTurn)
   {
     var currentMap = logs[currentTurn].serverGameState.map;
-    for (int row = 0; row < logs[currentTurn].serverGameState.mapWidth; row++)
+    for (int row = 0; row < rows; row++)
     {
-      for (int col = 0; col < logs[currentTurn].serverGameState.mapHeight; col++)
+      for (int col = 0; col < cols; col++)
       {
         if (mapInfo[row][col].type != currentMap[row][col].type || mapInfo[row][col].growState != currentMap[row][col].growState)
         {

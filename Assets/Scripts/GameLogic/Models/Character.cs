@@ -8,15 +8,15 @@ public struct Character
   public int y;
   public Team team;
   public CharacterRole characterRole;
-  public int harvest;
+  public int fruitCarrying;
   public bool isScared;
 
-  public int performAction1, performAction2;
-  /*
-    Planter: plant trees, catch worms
-    Harvester: collected points, bring to box points
-    Worm: destroy trees, scare harvester
-   */
+  public int numTreePlanted;
+  public int numWormCaught;
+  public int numFruitHarvested;
+  public int numFruitDelivered;
+  public int numTreeDestroyed;
+  public int numHarvesterScared;
 
   public Character(int x, int y, Team team, CharacterRole characterRole)
   {
@@ -24,10 +24,11 @@ public struct Character
     this.x = x;
     this.y = y;
     this.team = team;
-    this.harvest = 0;
-    this.isScared= false;
-    this.performAction1 = 0;
-    this.performAction2 = 0;
+    this.fruitCarrying = 0;
+    this.isScared = false;
+
+    // TODO subclass to record only role-specific action
+    numTreePlanted = numWormCaught = numFruitHarvested = numFruitDelivered = numTreeDestroyed = numHarvesterScared = 0;
   }
 
   public int DistanceTo(Character character)

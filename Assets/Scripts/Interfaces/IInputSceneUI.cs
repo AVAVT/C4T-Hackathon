@@ -9,9 +9,9 @@ public interface IInputSceneUI
   void ShowRecordingProcess(int currentTurn, int gameLength);
   void ShowNotiPanel(string text, float delay, float duration);
   void ShowRecordPanelWhenError();
-  Action StartGame{set;}
-  Action<int> LoadAIFolder{set;}
-  Action<bool> ChangeMap{set;}
-  void ShowMapInfo(Map mapInfo);
-  bool HaveError{get;}
+  Action StartGame { set; }
+  Action<int> LoadAIFolder { set; }
+  Action<bool> ChangeMap { set; }
+  void ShowMapInfo(MapDisplayData mapInfo);
+  bool HaveError { get; }
 }

@@ -10,6 +10,7 @@ public class RecordManager : MonoBehaviour, IReplayRecorder
   public IInputSceneUI uiManager;
   private List<RecordModel> log = new List<RecordModel>();
   private string jsonFilePath;
+  GameRule gameRule;
 
   void Awake()
   {
@@ -29,8 +30,10 @@ public class RecordManager : MonoBehaviour, IReplayRecorder
     PlayerPrefs.SetString("LogPath", $"{jsonFilePath}/{fileName}");
   }
 
-  public void LogGameState(ServerGameState serverGameState)
+  public void LogGameStart(GameRule gameRule, ServerGameState serverGameState)
   {
+    this.gameRule = gameRule;
+
     RecordModel recordModel = new RecordModel();
     recordModel.serverGameState = JsonConvert.DeserializeObject<ServerGameState>(JsonConvert.SerializeObject(serverGameState));
     recordModel.serverGameState.turn = 0;
@@ -41,7 +44,7 @@ public class RecordManager : MonoBehaviour, IReplayRecorder
   public void LogTurn(ServerGameState serverGameState, List<TurnAction> actions)
   {
     uiManager.SaveErrorMessage($"Recorded turn: {serverGameState.turn}", false);
-    uiManager.ShowRecordingProcess(serverGameState.turn, GameConfigs.GAME_LENGTH);
+    uiManager.ShowRecordingProcess(serverGameState.turn, gameRule.gameLength);
     RecordModel recordModel = new RecordModel();
     recordModel.serverGameState = JsonConvert.DeserializeObject<ServerGameState>(JsonConvert.SerializeObject(serverGameState));
     recordModel.actions = actions;
