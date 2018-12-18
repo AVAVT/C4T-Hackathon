@@ -9,14 +9,9 @@ public class MapDisplayData : MapInfo
   public Texture2D mapTileData;
   public TileTypeColorCode typeColors;
 
-  public MapInfo ToMapInfo(GameRule gameRule)
+  public MapInfo ToMapInfo(GameConfig gameRule)
   {
     var mapInfo = new MapInfo();
-
-    foreach (var team in gameRule.availableTeams)
-    {
-      mapInfo.startingPositions[team] = new Dictionary<CharacterRole, System.Numerics.Vector2>();
-    }
 
     for (int x = 0; x < mapTileData.width; x++)
     {
@@ -31,21 +26,21 @@ public class MapDisplayData : MapInfo
         // TODO use C# 7
         if (tileType == TileType.RED_BOX)
         {
-          mapInfo.startingPositions[Team.Red][CharacterRole.Planter] = new System.Numerics.Vector2(x, y);
-          mapInfo.startingPositions[Team.Red][CharacterRole.Harvester] = new System.Numerics.Vector2(x, y);
+          mapInfo.startingPositions.SetItem(Team.Red, CharacterRole.Planter, new System.Numerics.Vector2(x, y));
+          mapInfo.startingPositions.SetItem(Team.Red, CharacterRole.Harvester, new System.Numerics.Vector2(x, y));
         }
         else if (tileType == TileType.BLUE_BOX)
         {
-          mapInfo.startingPositions[Team.Blue][CharacterRole.Planter] = new System.Numerics.Vector2(x, y);
-          mapInfo.startingPositions[Team.Blue][CharacterRole.Harvester] = new System.Numerics.Vector2(x, y);
+          mapInfo.startingPositions.SetItem(Team.Blue, CharacterRole.Planter, new System.Numerics.Vector2(x, y));
+          mapInfo.startingPositions.SetItem(Team.Blue, CharacterRole.Harvester, new System.Numerics.Vector2(x, y));
         }
         else if (tileType == TileType.RED_ROCK)
         {
-          mapInfo.startingPositions[Team.Red][CharacterRole.Worm] = new System.Numerics.Vector2(x, y);
+          mapInfo.startingPositions.SetItem(Team.Red, CharacterRole.Worm, new System.Numerics.Vector2(x, y));
         }
         else if (tileType == TileType.BLUE_ROCK)
         {
-          mapInfo.startingPositions[Team.Blue][CharacterRole.Worm] = new System.Numerics.Vector2(x, y);
+          mapInfo.startingPositions.SetItem(Team.Blue, CharacterRole.Worm, new System.Numerics.Vector2(x, y));
         }
       }
     }

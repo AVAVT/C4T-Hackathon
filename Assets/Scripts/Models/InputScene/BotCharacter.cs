@@ -27,7 +27,7 @@ public class BotCharacter : ICharacterController
     }
   }
 
-  private Func<GameState, GameRule, string> DoThink;
+  private Func<GameState, GameConfig, string> DoThink;
   private List<List<Node>> listNodes = new List<List<Node>>();
   private Node nextNode;
 
@@ -51,7 +51,7 @@ public class BotCharacter : ICharacterController
     }
   }
 
-  public async Task DoStart(GameState gameState, GameRule gameRule)
+  public async Task DoStart(GameState gameState, GameConfig gameRule)
   {
     // TODO use the same timeout config as DoTurn
     // TODO convert map to grid node
@@ -67,7 +67,7 @@ public class BotCharacter : ICharacterController
     }
   }
 
-  public async Task<string> DoTurn(GameState gameState, GameRule gameRule)
+  public async Task<string> DoTurn(GameState gameState, GameConfig gameRule)
   {
     UpdateCharacter(gameState);
 
@@ -106,7 +106,7 @@ public class BotCharacter : ICharacterController
     }
   }
 
-  public string DoPlanterThink(GameState gameState, GameRule gameRule)
+  public string DoPlanterThink(GameState gameState, GameConfig gameRule)
   {
     bool needChaseWorm = false;
     Vector2 wormPos = Vector2.Zero;
@@ -130,14 +130,14 @@ public class BotCharacter : ICharacterController
     }
   }
 
-  public string DoHarvesterThink(GameState gameState, GameRule gameRule)
+  public string DoHarvesterThink(GameState gameState, GameConfig gameRule)
   {
     bool needComeBack = false;
     if (Character.fruitCarrying >= 5) needComeBack = true;
 
     if (needComeBack)
     {
-      nextNode = MoveToPos(new Vector2(Character.x, Character.y), mapInfo.startingPositions[Character.team][CharacterRole.Harvester]);
+      nextNode = MoveToPos(new Vector2(Character.x, Character.y), mapInfo.startingPositions.GetItem(Character.team, CharacterRole.Harvester));
       return DirectionStringExtension.ToDirectionString(new Vector2(nextNode.x, nextNode.y) - new Vector2(Character.x, Character.y));
     }
     else
@@ -158,7 +158,7 @@ public class BotCharacter : ICharacterController
     }
   }
 
-  public string DoWormThink(GameState gameState, GameRule gameRule)
+  public string DoWormThink(GameState gameState, GameConfig gameRule)
   {
     Vector2 harvesterPos = Vector2.Zero;
     bool needChase = false;

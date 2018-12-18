@@ -46,7 +46,7 @@ public class PythonCharacter : ICharacterController, IRuntimeCharacter
     this.client = new AIService.AIServiceClient(channel);
   }
 
-  public async Task DoStart(GameState gameState, GameRule gameRule)
+  public async Task DoStart(GameState gameState, GameConfig gameRule)
   {
     // TODO use the same timeout config as DoTurn
     string json = JsonConvert.SerializeObject(gameState);
@@ -61,7 +61,7 @@ public class PythonCharacter : ICharacterController, IRuntimeCharacter
     }
   }
 
-  public async Task<string> DoTurn(GameState gameState, GameRule gameRule)
+  public async Task<string> DoTurn(GameState gameState, GameConfig gameRule)
   {
     UpdateCharacter(gameState);
 

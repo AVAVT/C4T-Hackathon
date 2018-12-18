@@ -12,35 +12,33 @@ public class GameLogic
 {
   public ServerGameState ServerGameState { get; private set; }
   MapInfo mapInfo;
-  GameRule gameRule;
-  public Dictionary<Team, Dictionary<CharacterRole, ICharacterController>> characterControllers;
+  GameConfig gameRule;
+  public TeamRoleMap<ICharacterController> characterControllers;
 
-  public static GameLogic GameLogicForPlay(GameRule gameRule, MapInfo mapInfo)
+  public static GameLogic GameLogicForPlay(GameConfig gameRule, MapInfo mapInfo)
   {
     return new GameLogic(gameRule, mapInfo);
   }
 
-  public static GameLogic GameLogicForViewReplay(GameRule gameRule, ServerGameState replayGameState)
+  public static GameLogic GameLogicForViewReplay(GameConfig gameRule, ServerGameState replayGameState)
   {
     return new GameLogic(gameRule, replayGameState);
   }
 
-  private GameLogic(GameRule gameRule, MapInfo mapInfo)
+  private GameLogic(GameConfig gameRule, MapInfo mapInfo)
   {
     ServerGameState = new ServerGameState();
     this.mapInfo = mapInfo;
     this.gameRule = gameRule;
   }
 
-  private GameLogic(GameRule gameRule, ServerGameState replayGameState)
+  private GameLogic(GameConfig gameRule, ServerGameState replayGameState)
   {
     ServerGameState = replayGameState;
     this.gameRule = gameRule;
   }
 
-  public void InitializeGame(
-    Dictionary<Team, Dictionary<CharacterRole, ICharacterController>> characterControllers
-  )
+  public void InitializeGame(TeamRoleMap<ICharacterController> characterControllers)
   {
     InitializeCharacters(ServerGameState, mapInfo);
     InitializeMap(ServerGameState, mapInfo);
@@ -65,11 +63,11 @@ public class GameLogic
 
   async Task DoStart(IReplayRecorder recorder)
   {
-    foreach (var kvp in characterControllers)
+    foreach (var team in characterControllers.GetTeams())
     {
-      GameState teamGameState = ServerGameState.GameStateForTeam(kvp.Key, gameRule);
+      GameState teamGameState = ServerGameState.GameStateForTeam(team, gameRule);
 
-      foreach (var controller in kvp.Value.Values)
+      foreach (var controller in characterControllers.GetItemsBy(team).Values)
       {
         await controller.DoStart(teamGameState, gameRule);
       }
@@ -81,11 +79,11 @@ public class GameLogic
   {
     List<TurnAction> actions = new List<TurnAction>();
 
-    foreach (var team in characterControllers)
+    foreach (var team in characterControllers.GetTeams())
     {
-      var teamGameState = ServerGameState.GameStateForTeam(team.Key, gameRule);
+      var teamGameState = ServerGameState.GameStateForTeam(team, gameRule);
 
-      foreach (var controller in team.Value.Values)
+      foreach (var controller in characterControllers.GetItemsBy(team).Values)
       {
         var result = await controller.DoTurn(teamGameState, gameRule);
         actions.Add(new TurnAction(
@@ -120,162 +118,14 @@ public class GameLogic
   {
     recorder?.LogEndGame(ServerGameState);
   }
-  void DoGrowPlant(ServerGameState serverGameState)
-  {
-    for (int row = 0; row < serverGameState.map.Count; row++)
-    {
-      for (int col = 0; col < serverGameState.map[row].Count; col++)
-      {
-        var tile = serverGameState.map[row][col];
-
-        if (IsUnripePlant(tile)) tile.growState++;
-
-        serverGameState.map[row][col] = tile;
-      }
-    }
-  }
-
-  bool IsUnripePlant(Tile tile)
-  {
-    return (tile.type == TileType.WILDBERRY && tile.growState < gameRule.wildberryFruitTime)
-    || ((tile.type == TileType.PUMPKIN || tile.type == TileType.TOMATO) && tile.growState < gameRule.plantFruitTime);
-  }
-
-  void DoGetPoint(ServerGameState serverGameState)
-  {
-    foreach (var team in serverGameState.characters)
-    {
-      var character = team.Value[CharacterRole.Harvester];
-      var currentTile = serverGameState.map[character.x][character.y];
-      var allyScoreTileType = team.Key == Team.Red ? TileType.RED_BOX : TileType.BLUE_BOX;
-
-      if (currentTile.type == allyScoreTileType)
-      {
-        if (team.Key == Team.Red) serverGameState.redScore += character.fruitCarrying;
-        else serverGameState.blueScore += character.fruitCarrying;
-
-        character.numFruitDelivered += character.fruitCarrying;
-        character.fruitCarrying = 0;
-        team.Value[CharacterRole.Harvester] = character;
-      }
-    }
-  }
-  void DoHarvest(ServerGameState serverGameState)
-  {
-    foreach (var team in serverGameState.characters)
-    {
-      var character = team.Value[CharacterRole.Harvester];
-      var currentTile = serverGameState.map[character.x][character.y];
-      var teamFruitType = team.Key == Team.Red ? TileType.TOMATO : TileType.PUMPKIN;
-
-      if (IsTileRipeHarvestableFruit(currentTile, teamFruitType))
-      {
-        currentTile.growState = 1;
-        serverGameState.map[character.x][character.y] = currentTile;
-
-        character.fruitCarrying += gameRule.harvestValue[currentTile.type];
-        character.numFruitHarvested++;
-        serverGameState.characters[team.Key][CharacterRole.Harvester] = character;
-      }
-    }
-  }
-
-  bool IsTileRipeHarvestableFruit(Tile tile, TileType teamFruitType)
-  {
-    return (tile.type == teamFruitType && tile.growState == gameRule.plantFruitTime)
-      || (tile.type == TileType.WILDBERRY && tile.growState == gameRule.wildberryFruitTime);
-  }
-
-  void DoPlantTree(ServerGameState serverGameState)
-  {
-    foreach (var team in serverGameState.characters)
-    {
-      var character = team.Value[CharacterRole.Planter];
-      var currentTile = serverGameState.map[character.x][character.y];
-      if (currentTile.type == TileType.EMPTY)
-      {
-        currentTile.type = team.Key == Team.Red ? TileType.TOMATO : TileType.PUMPKIN;
-        serverGameState.map[character.x][character.y] = currentTile;
-
-        var planter = serverGameState.characters[team.Key][CharacterRole.Planter];
-        planter.numTreePlanted++;
-        team.Value[CharacterRole.Planter] = planter;
-      }
-    }
-  }
-
-  void DoDestroyPlant(ServerGameState serverGameState)
-  {
-    foreach (var team in serverGameState.characters)
-    {
-      var character = team.Value[CharacterRole.Worm];
-      var currentTile = serverGameState.map[character.x][character.y];
-      var destroyablePlantType = team.Key == Team.Red ? TileType.PUMPKIN : TileType.TOMATO;
-      if (currentTile.type == destroyablePlantType)
-      {
-        currentTile.type = TileType.EMPTY;
-        currentTile.growState = 0;
-        serverGameState.map[character.x][character.y] = currentTile;
-
-        character.numTreeDestroyed++;
-        team.Value[CharacterRole.Worm] = character;
-      }
-    }
-  }
-  void DoScareHarvester(ServerGameState serverGameState)
-  {
-    foreach (var wormTeam in serverGameState.characters)
-    {
-      foreach (var harvesterTeam in serverGameState.characters)
-      {
-        if (wormTeam.Key == harvesterTeam.Key) continue; // Don't scare ally
-
-        var worm = wormTeam.Value[CharacterRole.Worm];
-        var harvester = harvesterTeam.Value[CharacterRole.Harvester];
-        if (worm.DistanceTo(harvester) == 0)
-        {
-          harvester.isScared = true;
-          harvesterTeam.Value[CharacterRole.Harvester] = harvester;
-
-          worm.numHarvesterScared++;
-          wormTeam.Value[CharacterRole.Worm] = worm;
-        }
-      }
-    }
-  }
-
-  void DoCatchWorm(ServerGameState serverGameState)
-  {
-    foreach (var planterTeam in serverGameState.characters)
-    {
-      foreach (var wormTeam in serverGameState.characters)
-      {
-        if (planterTeam.Key == wormTeam.Key) continue; // Don't catch ally
-
-        var worm = wormTeam.Value[CharacterRole.Worm];
-        var planter = planterTeam.Value[CharacterRole.Planter];
-
-        if (worm.DistanceTo(planter) == 0)
-        {
-          var wormNewPosition = mapInfo.startingPositions[worm.team][CharacterRole.Worm];
-          worm.x = (int)wormNewPosition.X;
-          worm.y = (int)wormNewPosition.Y;
-          wormTeam.Value[CharacterRole.Worm] = worm;
-
-          planter.numWormCaught++;
-          planterTeam.Value[CharacterRole.Planter] = planter;
-        }
-      }
-    }
-  }
 
   void DoMove(List<TurnAction> actions)
   {
-    Dictionary<Team, Dictionary<CharacterRole, Character>> targetPoses = new Dictionary<Team, Dictionary<CharacterRole, Character>>();
+    TeamRoleMap<Character> targetPoses = new TeamRoleMap<Character>();
     targetPoses = ObjectExtensions.Clone(ServerGameState.characters);
     foreach (var action in actions)
     {
-      var character = targetPoses[action.team][action.role];
+      var character = targetPoses.GetItem(action.team, action.role);
       var newPos = new Vector2(character.x, character.y);
       if (!character.isScared)
         newPos += action.direction.ToDirectionVector();
@@ -287,7 +137,7 @@ public class GameLogic
 
       if (!IsInImpassableTile(ServerGameState, character))
       {
-        targetPoses[action.team][action.role] = character;
+        targetPoses.SetItem(action.team, action.role, character);
       }
     }
 
@@ -297,35 +147,35 @@ public class GameLogic
   }
 
   // TODO refactor to prevent changing actions
-  void CancelMovementForCounterRolesSwapingPlaces(Dictionary<Team, Dictionary<CharacterRole, Character>> targetPoses, List<TurnAction> actions)
+  void CancelMovementForCounterRolesSwapingPlaces(TeamRoleMap<Character> targetPoses, List<TurnAction> actions)
   {
     if (AreSwapingPlaces(targetPoses, Team.Red, CharacterRole.Worm, Team.Blue, CharacterRole.Planter))
     {
-      targetPoses[Team.Red][CharacterRole.Worm] = ServerGameState.characters[Team.Red][CharacterRole.Worm];
+      targetPoses.ReplaceWithItemFrom(ServerGameState.characters, Team.Red, CharacterRole.Worm);
       SetActionToStay(actions, Team.Red, CharacterRole.Worm);
     }
     else if (AreSwapingPlaces(targetPoses, Team.Red, CharacterRole.Worm, Team.Blue, CharacterRole.Harvester))
     {
-      targetPoses[Team.Blue][CharacterRole.Harvester] = ServerGameState.characters[Team.Blue][CharacterRole.Harvester];
+      targetPoses.ReplaceWithItemFrom(ServerGameState.characters, Team.Blue, CharacterRole.Harvester);
       SetActionToStay(actions, Team.Blue, CharacterRole.Harvester);
     }
 
     if (AreSwapingPlaces(targetPoses, Team.Blue, CharacterRole.Worm, Team.Red, CharacterRole.Planter))
     {
-      targetPoses[Team.Blue][CharacterRole.Worm] = ServerGameState.characters[Team.Blue][CharacterRole.Worm];
+      targetPoses.ReplaceWithItemFrom(ServerGameState.characters, Team.Blue, CharacterRole.Worm);
       SetActionToStay(actions, Team.Blue, CharacterRole.Worm);
     }
     else if (AreSwapingPlaces(targetPoses, Team.Blue, CharacterRole.Worm, Team.Red, CharacterRole.Harvester))
     {
-      targetPoses[Team.Red][CharacterRole.Harvester] = ServerGameState.characters[Team.Red][CharacterRole.Harvester];
+      targetPoses.ReplaceWithItemFrom(ServerGameState.characters, Team.Red, CharacterRole.Harvester);
       SetActionToStay(actions, Team.Red, CharacterRole.Harvester);
     }
   }
 
-  bool AreSwapingPlaces(Dictionary<Team, Dictionary<CharacterRole, Character>> targetPoses, Team char1Team, CharacterRole char1Role, Team char2Team, CharacterRole char2Role)
+  bool AreSwapingPlaces(TeamRoleMap<Character> targetPoses, Team char1Team, CharacterRole char1Role, Team char2Team, CharacterRole char2Role)
   {
-    return targetPoses[char1Team][char1Role].DistanceTo(ServerGameState.characters[char2Team][char2Role]) == 0
-          && targetPoses[char2Team][char2Role].DistanceTo(ServerGameState.characters[char1Team][char1Role]) == 0;
+    return targetPoses.GetItem(char1Team, char1Role).DistanceTo(ServerGameState.characters.GetItem(char2Team, char2Role)) == 0
+          && targetPoses.GetItem(char2Team, char2Role).DistanceTo(ServerGameState.characters.GetItem(char1Team, char1Role)) == 0;
   }
   void SetActionToStay(List<TurnAction> listActions, Team team, CharacterRole characterRole)
   {
@@ -341,6 +191,167 @@ public class GameLogic
     }
   }
 
+  void DoCatchWorm(ServerGameState serverGameState)
+  {
+    foreach (var planter in serverGameState.characters.GetItemsBy(CharacterRole.Planter))
+    {
+      foreach (var worm in serverGameState.characters.GetItemsBy(CharacterRole.Worm))
+      {
+        if (planter.team == worm.team) continue;
+        if (worm.DistanceTo(planter) != 0) continue;
+
+        var newWormState = worm;
+        var newPlanterState = planter;
+
+        var wormNewPosition = mapInfo.startingPositions.GetItem(worm.team, worm.characterRole);
+
+        newWormState.x = (int)wormNewPosition.X;
+        newWormState.y = (int)wormNewPosition.Y;
+        serverGameState.characters.SetItem(worm.team, worm.characterRole, newWormState);
+
+        newPlanterState.numWormCaught++;
+        serverGameState.characters.SetItem(planter.team, planter.characterRole, newPlanterState);
+      }
+    }
+  }
+
+  void DoScareHarvester(ServerGameState serverGameState)
+  {
+    foreach (var worm in serverGameState.characters.GetItemsBy(CharacterRole.Worm))
+    {
+      foreach (var harvester in serverGameState.characters.GetItemsBy(CharacterRole.Harvester))
+      {
+        if (worm.team == harvester.team) continue;
+        if (harvester.DistanceTo(worm) != 0) continue;
+
+        var newHarvesterState = harvester;
+        var newWormState = worm;
+
+        newHarvesterState.isScared = true;
+        serverGameState.characters.SetItem(harvester.team, harvester.characterRole, newHarvesterState);
+
+        newWormState.numHarvesterScared++;
+        serverGameState.characters.SetItem(worm.team, worm.characterRole, newWormState);
+      }
+    }
+  }
+
+  void DoPlantTree(ServerGameState serverGameState)
+  {
+    foreach (var planter in serverGameState.characters.GetItemsBy(CharacterRole.Planter))
+    {
+      var currentTile = serverGameState.map[planter.x][planter.y];
+      if (currentTile.type == TileType.EMPTY)
+      {
+        currentTile.type = gameRule.FruitTileTypeForTeam(planter.team);
+        serverGameState.map[planter.x][planter.y] = currentTile;
+
+        var newPlanterState = planter;
+        newPlanterState.numTreePlanted++;
+        serverGameState.characters.SetItem(planter.team, planter.characterRole, newPlanterState);
+      }
+    }
+  }
+
+  void DoHarvest(ServerGameState serverGameState)
+  {
+    var harvesters = serverGameState.characters.GetItemsBy(CharacterRole.Harvester);
+    foreach (var harvester in harvesters)
+    {
+      if (harvester.fruitCarrying >= gameRule.harvesterMaxCapacity) continue;
+
+      var currentTile = serverGameState.map[harvester.x][harvester.y];
+      var teamFruitType = gameRule.FruitTileTypeForTeam(harvester.team);
+
+      if (IsTileRipeHarvestableFruit(currentTile, teamFruitType))
+      {
+        currentTile.growState = 1;
+        serverGameState.map[harvester.x][harvester.y] = currentTile;
+
+        var newHarvesterState = harvester;
+        var fruitValue = gameRule.fruitScoreValues[currentTile.type];
+
+        if (currentTile.type == TileType.WILDBERRY)
+        {
+          bool enemyHarvesterAtSamePlace = harvesters.Any(h => h.team != harvester.team && h.x == harvester.x && h.y == harvester.y);
+          if (enemyHarvesterAtSamePlace) fruitValue /= 2;
+        }
+
+        newHarvesterState.fruitCarrying += fruitValue;
+        newHarvesterState.numFruitHarvested += fruitValue;
+        serverGameState.characters.SetItem(harvester.team, harvester.characterRole, newHarvesterState);
+      }
+    }
+  }
+
+  bool IsTileRipeHarvestableFruit(Tile tile, TileType teamFruitType)
+  {
+    return (tile.type == teamFruitType && tile.growState == gameRule.plantFruitTime)
+      || (tile.type == TileType.WILDBERRY && tile.growState == gameRule.wildberryFruitTime);
+  }
+
+  void DoGetPoint(ServerGameState serverGameState)
+  {
+    foreach (var harvester in serverGameState.characters.GetItemsBy(CharacterRole.Harvester))
+    {
+      var currentTile = serverGameState.map[harvester.x][harvester.y];
+      var scoreTileType = gameRule.ScoreTileTypeForTeam(harvester.team);
+
+      if (currentTile.type == scoreTileType)
+      {
+        if (harvester.team == Team.Red) serverGameState.redScore += harvester.fruitCarrying;
+        else serverGameState.blueScore += harvester.fruitCarrying;
+
+        var newHarvesterState = harvester;
+        newHarvesterState.numFruitDelivered += harvester.fruitCarrying;
+        newHarvesterState.fruitCarrying = 0;
+        serverGameState.characters.SetItem(harvester.team, harvester.characterRole, newHarvesterState);
+      }
+    }
+  }
+
+  void DoDestroyPlant(ServerGameState serverGameState)
+  {
+    foreach (var worm in serverGameState.characters.GetItemsBy(CharacterRole.Worm))
+    {
+      var currentTile = serverGameState.map[worm.x][worm.y];
+      var destroyablePlantTypes = gameRule.WormDestroyTileTypeForTeam(worm.team);
+      if (destroyablePlantTypes.Contains(currentTile.type))
+      {
+        currentTile.type = TileType.EMPTY;
+        currentTile.growState = 0;
+        serverGameState.map[worm.x][worm.y] = currentTile;
+
+        var newWormState = worm;
+        newWormState.numTreeDestroyed++;
+        serverGameState.characters.SetItem(worm.team, worm.characterRole, newWormState);
+      }
+    }
+  }
+
+  void DoGrowPlant(ServerGameState serverGameState)
+  {
+    for (int row = 0; row < serverGameState.map.Count; row++)
+    {
+      for (int col = 0; col < serverGameState.map[row].Count; col++)
+      {
+        var tile = serverGameState.map[row][col];
+
+        if (IsUnripePlant(tile))
+        {
+          tile.growState++;
+          serverGameState.map[row][col] = tile;
+        }
+      }
+    }
+  }
+
+  bool IsUnripePlant(Tile tile)
+  {
+    return (tile.type == TileType.WILDBERRY && tile.growState < gameRule.wildberryFruitTime)
+    || ((tile.type == TileType.PUMPKIN || tile.type == TileType.TOMATO) && tile.growState < gameRule.plantFruitTime);
+  }
+
   bool IsInImpassableTile(ServerGameState serverGameState, Character character)
   {
     return character.DistanceTo(serverGameState.map[character.x][character.y]) == 0 && serverGameState.map[character.x][character.y].type == TileType.IMPASSABLE;
@@ -348,38 +359,29 @@ public class GameLogic
 
   ServerGameState InitializeCharacters(ServerGameState gameState, MapInfo mapInfo)
   {
-    InitializeTeam(Team.Red, gameState, mapInfo.startingPositions);
-    InitializeTeam(Team.Blue, gameState, mapInfo.startingPositions);
-
-    return gameState;
-  }
-
-  void InitializeTeam(Team team, ServerGameState gameState, Dictionary<Team, Dictionary<CharacterRole, Vector2>> startingPoses)
-  {
-    gameState.characters.Add(team, new Dictionary<CharacterRole, Character>());
-    for (int i = 0; i < 3; i++)
+    foreach (var team in gameRule.availableTeams)
     {
-      CharacterRole role = (CharacterRole)i;
-
-      var pos = startingPoses[team][role];
-      var character = new Character(
+      foreach (var role in gameRule.availableRoles)
+      {
+        var pos = mapInfo.startingPositions.GetItem(team, role);
+        var character = new Character(
           (int)pos.X,
           (int)pos.Y,
           team,
           role
         );
-      gameState.characters[team].Add(role, character);
+        gameState.characters.SetItem(team, role, character);
+      }
     }
+
+    return gameState;
   }
 
-  void AssignCharacterToControllers(ServerGameState gameState, Dictionary<Team, Dictionary<CharacterRole, ICharacterController>> controllers)
+  void AssignCharacterToControllers(ServerGameState gameState, TeamRoleMap<ICharacterController> controllers)
   {
-    foreach (var team in gameState.characters.Keys)
+    foreach (var character in gameState.characters)
     {
-      foreach (var kvp in gameState.characters[team])
-      {
-        controllers[team][kvp.Key].Character = kvp.Value;
-      }
+      controllers.GetItem(character.team, character.characterRole).Character = character;
     }
   }
 
@@ -406,8 +408,5 @@ public class GameLogic
     return gameState;
   }
 
-  bool IsTileTypeAlwaysVisible(TileType type)
-  {
-    return type == TileType.RED_BOX || type == TileType.BLUE_BOX || type == TileType.RED_ROCK || type == TileType.BLUE_ROCK;
-  }
+  bool IsTileTypeAlwaysVisible(TileType type) => type == TileType.RED_BOX || type == TileType.BLUE_BOX || type == TileType.RED_ROCK || type == TileType.BLUE_ROCK;
 }

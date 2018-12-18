@@ -18,7 +18,7 @@ public class GrpcInputManager : MonoBehaviour
   public IInputSceneUI uiManager;
 
   //characters
-  Dictionary<Team, Dictionary<CharacterRole, ICharacterController>> characters = new Dictionary<Team, Dictionary<CharacterRole, ICharacterController>>();
+  TeamRoleMap<ICharacterController> characters = new TeamRoleMap<ICharacterController>();
   private bool[] isBot;
 
   //client
@@ -125,9 +125,9 @@ public class GrpcInputManager : MonoBehaviour
   }
 
   //-------------------------------------------- Read Python -------------------------------------------------
-  public Dictionary<Team, Dictionary<CharacterRole, ICharacterController>> InitCharacter(MapInfo mapInfo, GameRule gameRule)
+  public TeamRoleMap<ICharacterController> InitCharacter(MapInfo mapInfo, GameConfig gameRule)
   {
-    var controllers = new Dictionary<Team, Dictionary<CharacterRole, ICharacterController>>();
+    var controllers = new TeamRoleMap<ICharacterController>();
 
     int botIndex = 0; // TODO change bot to use the same configurable system as controllers
     foreach (var team in gameRule.availableTeams)
@@ -140,7 +140,7 @@ public class GrpcInputManager : MonoBehaviour
           character.uiManager = this.uiManager;
           character.CancelStartGameTask = StopRecordGameWhenError;
 
-          controllers[team][role] = character;
+          controllers.SetItem(team, role, character);
         }
         else
         {
@@ -148,7 +148,7 @@ public class GrpcInputManager : MonoBehaviour
           character.uiManager = this.uiManager;
           character.mapInfo = mapInfo;
 
-          controllers[team][role] = character;
+          controllers.SetItem(team, role, character);
         }
 
         botIndex++;
@@ -270,7 +270,7 @@ public class GrpcInputManager : MonoBehaviour
 
   async void StartRecordGame(CancellationToken token)
   {
-    GameRule gameRule = GameRule.DefaultGameRule();
+    GameConfig gameRule = GameConfig.DefaultGameRule();
 
     var mapInfo = mapModel.listMap[currentMap].mapDisplayData.ToMapInfo(gameRule);
 

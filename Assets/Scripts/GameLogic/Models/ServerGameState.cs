@@ -6,16 +6,19 @@ public class ServerGameState
   public int turn = 0;
   public int redScore = 0;
   public int blueScore = 0;
-  public Dictionary<Team, Dictionary<CharacterRole, Character>> characters = new Dictionary<Team, Dictionary<CharacterRole, Character>>();
+  public TeamRoleMap<Character> characters = new TeamRoleMap<Character>();
   public List<List<Tile>> map = new List<List<Tile>>();
 
-  public GameState GameStateForTeam(Team team, GameRule gameRule)
+  public GameState GameStateForTeam(Team team, GameConfig gameRule)
   {
     var result = new GameState(turn, team);
 
-    result.allies.AddRange(characters[team].Values);
-    foreach (var enemy in characters[(Team)(1 - team)].Values)
+    result.allies.AddRange(characters.GetItemsBy(team).Values);
+
+    foreach (Character enemy in characters)
     {
+      if (team == enemy.team) continue;
+
       foreach (var ally in result.allies)
       {
         if (enemy.DistanceTo(ally) <= gameRule.sightDistance)

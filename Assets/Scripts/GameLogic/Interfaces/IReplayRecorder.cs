@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 public interface IReplayRecorder
 {
-  void LogGameStart(GameRule gameRule, ServerGameState serverGameState);
+  void LogGameStart(GameConfig gameRule, ServerGameState serverGameState);
   void LogTurn(ServerGameState serverGameState, List<TurnAction> actions);
   void LogEndGame(ServerGameState serverGameState);
 }

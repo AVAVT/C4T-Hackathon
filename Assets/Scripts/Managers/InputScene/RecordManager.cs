@@ -10,7 +10,7 @@ public class RecordManager : MonoBehaviour, IReplayRecorder
   public IInputSceneUI uiManager;
   private List<RecordModel> log = new List<RecordModel>();
   private string jsonFilePath;
-  GameRule gameRule;
+  GameConfig gameConfig;
 
   void Awake()
   {
@@ -19,20 +19,12 @@ public class RecordManager : MonoBehaviour, IReplayRecorder
 
   public void LogEndGame(ServerGameState serverGameState)
   {
-    jsonFilePath = PlayerPrefs.GetString("SaveLogPath", $"{Application.streamingAssetsPath}/logs");
-    var dateString = DateTime.Now;
-    var fileName = $"log-{DateTime.Now.Day}{DateTime.Now.Month}{DateTime.Now.Year}-{DateTime.Now.Hour}{DateTime.Now.Minute}{DateTime.Now.Second}.json";
-    if (!Directory.Exists(jsonFilePath))
-      Directory.CreateDirectory(jsonFilePath);
-
-    string json = JsonConvert.SerializeObject(log, Formatting.Indented);
-    File.WriteAllText($"{jsonFilePath}/{fileName}", json);
-    PlayerPrefs.SetString("LogPath", $"{jsonFilePath}/{fileName}");
+    WriteLogToFile();
   }
 
-  public void LogGameStart(GameRule gameRule, ServerGameState serverGameState)
+  public void LogGameStart(GameConfig gameRule, ServerGameState serverGameState)
   {
-    this.gameRule = gameRule;
+    this.gameConfig = gameRule;
 
     RecordModel recordModel = new RecordModel();
     recordModel.serverGameState = JsonConvert.DeserializeObject<ServerGameState>(JsonConvert.SerializeObject(serverGameState));
@@ -44,10 +36,33 @@ public class RecordManager : MonoBehaviour, IReplayRecorder
   public void LogTurn(ServerGameState serverGameState, List<TurnAction> actions)
   {
     uiManager.SaveErrorMessage($"Recorded turn: {serverGameState.turn}", false);
-    uiManager.ShowRecordingProcess(serverGameState.turn, gameRule.gameLength);
+    uiManager.ShowRecordingProcess(serverGameState.turn, gameConfig.gameLength);
     RecordModel recordModel = new RecordModel();
     recordModel.serverGameState = JsonConvert.DeserializeObject<ServerGameState>(JsonConvert.SerializeObject(serverGameState));
     recordModel.actions = actions;
     log.Add(recordModel);
   }
+
+  void WriteLogToFile()
+  {
+    jsonFilePath = PlayerPrefs.GetString("SaveLogPath", $"{Application.streamingAssetsPath}/logs");
+    var dateString = DateTime.Now;
+    var fileName = $"log-{DateTime.Now.Day}{DateTime.Now.Month}{DateTime.Now.Year}-{DateTime.Now.Hour}{DateTime.Now.Minute}{DateTime.Now.Second}.json";
+    if (!Directory.Exists(jsonFilePath))
+      Directory.CreateDirectory(jsonFilePath);
+    var gameRecord = new GameRecordLogData();
+    gameRecord.gameConfig = gameConfig;
+    gameRecord.log = log;
+
+    string json = JsonConvert.SerializeObject(gameRecord, Formatting.Indented);
+    File.WriteAllText($"{jsonFilePath}/{fileName}", json);
+    PlayerPrefs.SetString("LogPath", $"{jsonFilePath}/{fileName}");
+  }
+}
+
+[System.Serializable]
+public class GameRecordLogData
+{
+  public GameConfig gameConfig;
+  public List<RecordModel> log;
 }
