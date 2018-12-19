@@ -161,14 +161,14 @@ public class DisplayRecordManager : MonoBehaviour
         {
           //TODO: Show time out
           Debug.Log($"AI of {currentCharacter.characterRole} - team {currentCharacter.team} is time out!");
-          characterGOs[action.team][action.role].GetComponent<DisplayCharacter>().StartShowCharacterNoti(1, emoTimeOut);
+          characterGO.GetComponent<DisplayCharacter>().StartShowCharacterNoti(1, emoTimeOut);
           uiManager.DisplayCharacterStatus((int)action.team * 3 + (int)action.role, "Time out");
         }
         else if (action.crashed)
         {
           //TODO: Show is crashed
           Debug.Log($"AI of {currentCharacter.characterRole} - team {currentCharacter.team} is crashed!");
-          characterGOs[action.team][action.role].GetComponent<DisplayCharacter>().StartShowCharacterNoti(1, emoCrash);
+          characterGO.GetComponent<DisplayCharacter>().StartShowCharacterNoti(1, emoCrash);
           uiManager.DisplayCharacterStatus((int)action.team * 3 + (int)action.role, "Crashed");
         }
         else
@@ -211,7 +211,6 @@ public class DisplayRecordManager : MonoBehaviour
     {
       for (int i = 0; i < 3; i++)
       {
-        var serverCharacter = gameRecordData.log[currentTurn].serverGameState.characters.GetItem((Team)team, (CharacterRole)i);
         var character = characters.GetItem((Team)team, (CharacterRole)i);
         var characterGO = characterGOs.GetItem((Team)team, (CharacterRole)i);
         if (character.isScared)

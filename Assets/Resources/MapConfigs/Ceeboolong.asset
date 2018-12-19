@@ -9,10 +9,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6ffd5632ca894dd49984d434092883a1, type: 3}
-  m_Name: Amboolong
+  m_Name: Ceeboolong
   m_EditorClassIdentifier: 
   mapDisplayData:
-    mapName: Ambooloong
-    mapPreview: {fileID: 21300000, guid: ad960d5275a78f54b9807e658ea0bee4, type: 3}
-    mapTileData: {fileID: 2800000, guid: 93ae08cc7624a6b468ca505e3f9593e3, type: 3}
+    mapName: Ceeboolong
+    mapPreview: {fileID: 21300000, guid: 981e4116e74e29f4783b8b5fb5de00c4, type: 3}
+    mapTileData: {fileID: 2800000, guid: c75957b326556364bab5124a1ceb6827, type: 3}
     typeColors: {fileID: 11400000, guid: e43491775b34fab4f903c2cd64225427, type: 2}

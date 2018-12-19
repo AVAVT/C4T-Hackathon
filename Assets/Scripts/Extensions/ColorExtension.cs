@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Utilities
+public static class ColorExtension
 {
   public static Color SetColorAlpha(Color color, float a)
   {

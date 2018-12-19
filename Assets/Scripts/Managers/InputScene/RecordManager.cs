@@ -7,15 +7,11 @@ using UnityEngine.SceneManagement;
 
 public class RecordManager : MonoBehaviour, IReplayRecorder
 {
+  public IErrorRecorder errorRecorder;
   public IInputSceneUI uiManager;
   private List<RecordModel> log = new List<RecordModel>();
   private string jsonFilePath;
   GameConfig gameConfig;
-
-  void Awake()
-  {
-    uiManager = GetComponent<InputSceneUI>();
-  }
 
   public void LogEndGame(ServerGameState serverGameState)
   {
@@ -35,7 +31,7 @@ public class RecordManager : MonoBehaviour, IReplayRecorder
 
   public void LogTurn(ServerGameState serverGameState, List<TurnAction> actions)
   {
-    uiManager.SaveErrorMessage($"Recorded turn: {serverGameState.turn}", false);
+    errorRecorder.RecordErrorMessage($"Recorded turn: {serverGameState.turn}", false);
     uiManager.ShowRecordingProcess(serverGameState.turn, gameConfig.gameLength);
     RecordModel recordModel = new RecordModel();
     recordModel.serverGameState = JsonConvert.DeserializeObject<ServerGameState>(JsonConvert.SerializeObject(serverGameState));

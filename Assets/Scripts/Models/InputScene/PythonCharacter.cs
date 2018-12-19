@@ -9,7 +9,7 @@ using UnityEngine;
 
 public class PythonCharacter : ICharacterController, IRuntimeCharacter
 {
-  public IInputSceneUI uiManager;
+  public IErrorRecorder errorRecorder;
   private Channel channel;
   private AIService.AIServiceClient client;
   private bool isTimedOut = false;
@@ -56,7 +56,7 @@ public class PythonCharacter : ICharacterController, IRuntimeCharacter
     }
     catch (System.Exception ex)
     {
-      uiManager.SaveErrorMessage($"Get AI Response fail! Fail message: {ex}", true);
+      errorRecorder.RecordErrorMessage($"Get AI Response fail! Fail message: {ex}", true);
       cancelStartGameTask?.Invoke();
     }
   }
@@ -103,7 +103,7 @@ public class PythonCharacter : ICharacterController, IRuntimeCharacter
     }
     catch (System.Exception ex)
     {
-      uiManager.SaveErrorMessage($"Get AI Response fail! Fail message: {ex}", true);
+      errorRecorder.RecordErrorMessage($"Get AI Response fail! Fail message: {ex}", true);
       UnityEngine.Debug.LogError($"Fail! Message: {ex}");
       cancelStartGameTask?.Invoke();
       return "STAY";

@@ -8,67 +8,26 @@ using UnityEngine.UI;
 using DG.Tweening;
 using System.Diagnostics;
 using System.IO;
+using System.Collections.Generic;
 
 public class InputSceneUI : MonoBehaviour, IInputSceneUI
 {
   [Header("UI Components")]
-  [SerializeField] private GameObject startPanel;
-  [SerializeField] private GameObject inputPanel;
-  [SerializeField] private GameObject playRecordPanel;
-  [SerializeField] private GameObject recordingPanel;
-  [SerializeField] private GameObject loadingPanel;
-  [SerializeField] private GameObject settingPanel;
-  [Header("Input Panel")]
-  [SerializeField] private InputField[] characterInputNames;
-  [SerializeField] private Image[] characterStatus;
-  [SerializeField] private Image[] characterBrowseButtons;
-  [SerializeField] private Sprite importButtonSprite, changeButtonSprite;
-  [SerializeField] private Sprite unreadyStatusSprite, readyStatusSprite;
-  [SerializeField] private Image NotiPanel;
-  [SerializeField] private TMP_Text NotiText;
+  [SerializeField] private StartPanel startPanel;
+  [SerializeField] private PlayRecordPanel playRecordPanel;
+  [SerializeField] private SettingPanel settingPanel;
+  [SerializeField] private InputPanel inputPanel;
+  [SerializeField] private LoadingPanel loadingPanel;
+  [SerializeField] private NotiPanel notiPanel;
 
-  [Header("Map info")]
-  [SerializeField] private Image mapPreview;
-  [SerializeField] private TMP_Text mapName;
-
-  [Header("Recording Panel")]
-  [SerializeField] private TMP_Text outputText;
-
-  [Header("Loading Panel")]
-  [SerializeField] private Image loadingBar;
-  [SerializeField] private TMP_Text loadingProcessText;
-  [SerializeField] private TMP_Text tipsText;
-  [SerializeField] private string[] tips;
-  [Header("Setting panel")]
-  [SerializeField] private InputField pythonPathText;
-  [SerializeField] private InputField saveLogPathText;
-  [SerializeField] private TMP_Text errorText;
-  [SerializeField] private GameObject btnSettingBack; //not show when first config
-
-  public Action StartGame
+  public Action<int> SetIsBot
   {
     set
     {
-      startGame = value;
+      setIsBot = value;
     }
   }
-
-  public Action<int> LoadAIFolder
-  {
-    set
-    {
-      loadAIFolder = value;
-    }
-  }
-
-  public bool HaveError
-  {
-    get
-    {
-      return haveError;
-    }
-  }
-
+  private Action<int> setIsBot;
   public Action<bool> ChangeMap
   {
     set
@@ -76,285 +35,136 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
       changeMap = value;
     }
   }
-
-  private Action startGame;
-  private Action<int> loadAIFolder;
   private Action<bool> changeMap;
-  private string errorMessage;
-  private bool haveError = false;
+  public Action StartGame
+  {
+    set
+    {
+      startGame = value;
+    }
+  }
+  private Action startGame;
+
+  //---------------------------------- Bind panels -----------------------------------
   void Start()
   {
-#if UNITY_EDITOR
-    PlayerPrefs.DeleteKey("HaveConfig");
-#endif
+    BindPanels();
 
-    if (PlayerPrefs.GetInt("HaveConfig", 0) == 0)
-    {
-      PlayerPrefs.SetString("SaveLogPath", $"{Application.streamingAssetsPath}/logs");
-      saveLogPathText.text = PlayerPrefs.GetString("SaveLogPath");
-      var pythonPath = GetPythonPathFromEnvironment();
-      if (pythonPath != "")
-      {
-        PlayerPrefs.SetString("PythonPath", $"{pythonPath}python.exe");
-        pythonPathText.text = PlayerPrefs.GetString("PythonPath");
-      }
-      else
-      {
-        PlayerPrefs.SetInt("HaveConfig", 1);
-        startPanel.SetActive(false);
-        settingPanel.SetActive(true);
-        btnSettingBack.SetActive(false);
-      }
-    }
-    else
-    {
-      pythonPathText.text = PlayerPrefs.GetString("PythonPath");
-      saveLogPathText.text = PlayerPrefs.GetString("SaveLogPath");
-    }
+    CallChangeMap(true);
+    CallChangeMap(false);
   }
 
-  string GetPythonPathFromEnvironment()
+  private void BindPanels()
   {
-    ProcessStartInfo startInfo = new ProcessStartInfo();
-    var pathString = startInfo.EnvironmentVariables["Path"];
-    var pathStringSplit = pathString.Split(';');
-    foreach (var pathAfterSplit in pathStringSplit)
-    {
-      if (pathAfterSplit.Contains("Python") && pathAfterSplit.Contains("3"))
-      {
-        var tempPathSplit = Path.GetDirectoryName(pathAfterSplit).Split('\\');
-        if (tempPathSplit[tempPathSplit.Length - 1].Contains("Python")) return pathAfterSplit;
-      }
-    }
-    return "";
+    BindStartPanel();
+    BindPlayRecordPanel();
+    BindSettingPanel();
+    BindInputPanel();
+    BindLoadingPanel();
   }
 
-  private void SavePlayerName()
+  private void BindStartPanel()
   {
-    for (int i = 0; i < characterInputNames.Length; i++)
-    {
-      if (!String.IsNullOrEmpty(characterInputNames[i].text))
-        PlayerPrefs.SetString($"Player{i}Name", characterInputNames[i].text);
-      else
-        PlayerPrefs.SetString($"Player{i}Name", $"Player {i + 1}");
-    }
+    startPanel.EnableInputPanel = ToInputPanel;
+    startPanel.EnablePlayRecordPanel = ToPlayRecordPanel;
+    startPanel.EnableSettingPanel = ToSettingPanel;
+  }
+  private void BindPlayRecordPanel()
+  {
+    playRecordPanel.StartLoadingPlayScene = StartLoadingPlayScene;
+    playRecordPanel.ShowNotiPanel = ShowNotiPanel;
+    playRecordPanel.EnableStartPanel = ToStartPanel;
+  }
+  private void BindSettingPanel()
+  {
+    settingPanel.EnableStartPanel = ToStartPanel;
+    settingPanel.EnableSettingPanel = ToSettingPanel;
+  }
+  private void BindInputPanel()
+  {
+    inputPanel.ShowNotiPanel = ShowNotiPanel;
+    inputPanel.SetIsBot = CallIsSetBot;
+    inputPanel.ChangeMap = CallChangeMap;
+    inputPanel.StartGame = CallStartGame;
+    inputPanel.EnableLoadingPanel = ToLoadingPanel;
+    inputPanel.EnableStartPanel = ToStartPanel;
+  }
+  private void BindLoadingPanel()
+  {
+    loadingPanel.EnableInputPanel = ToInputPanel;
   }
 
-  public void SaveErrorMessage(string text, bool haveError)
+  private void DisableAllPanel()
   {
-    if (haveError)
-    {
-      this.haveError = true;
-      errorMessage += text + Environment.NewLine + Environment.NewLine;
-    }
-    if (!haveError && !this.haveError) errorMessage += text + Environment.NewLine + Environment.NewLine;
+    inputPanel.gameObject.SetActive(false);
+    loadingPanel.gameObject.SetActive(false);
+    playRecordPanel.gameObject.SetActive(false);
+    settingPanel.gameObject.SetActive(false);
+    startPanel.gameObject.SetActive(false);
+  }
+  private void ToStartPanel()
+  {
+    DisableAllPanel();
+    startPanel.gameObject.SetActive(true);
+  }
+  private void ToPlayRecordPanel()
+  {
+    DisableAllPanel();
+    playRecordPanel.gameObject.SetActive(true);
+  }
+  private void ToInputPanel()
+  {
+    DisableAllPanel();
+    inputPanel.gameObject.SetActive(true);
+  }
+  private void ToLoadingPanel()
+  {
+    DisableAllPanel();
+    loadingPanel.gameObject.SetActive(true);
+  }
+  private void ToSettingPanel()
+  {
+    DisableAllPanel();
+    settingPanel.gameObject.SetActive(true);
+    settingPanel.GetComponent<SettingPanel>().ResetSettingPanel();
   }
 
-  //--------------------------------- Choose files --------------------------------------
-  private void ChooseRecordBrowser()
+  private void CallIsSetBot(int index)
   {
-    var path = FileBrowser.OpenSingleFile("Choose log file to play!", Application.streamingAssetsPath + "/logs", "json");
-    if (!String.IsNullOrEmpty(path))
-    {
-      PlayerPrefs.SetString("LogPath", path);
-      StartCoroutine(StartLoadingPlayScene());
-    }
-    else
-    {
-      UnityEngine.Debug.Log("Invalid path given or folder does not contain main.py file!");
-    }
+    setIsBot?.Invoke(index);
   }
-
-  private void ChoosePythonBrowser()
+  private void CallStartGame()
   {
-    var path = FileBrowser.OpenSingleFile("Choose python.exe in your computer!", "C:/", "exe");
-    if (!String.IsNullOrEmpty(path) && path.Contains("python.exe"))
-    {
-      pythonPathText.text = path;
-      PlayerPrefs.SetString("PythonPath", path);
-      PlayerPrefs.SetInt("HaveConfig", 1);
-      errorText.text = "Setup path to file python.exe successfully!";
-      errorText.gameObject.SetActive(true);
-      btnSettingBack.SetActive(true);
-    }
-    else
-    {
-      errorText.text = "Invalid path given or it is not a path to python.exe!";
-      errorText.gameObject.SetActive(true);
-      UnityEngine.Debug.Log("Invalid path given");
-    }
-  }
-
-  private void ChooseLogPathBrowser()
-  {
-    var path = FileBrowser.OpenSingleFolder("Choose directory to save your log files!", $"{Application.streamingAssetsPath}/logs");
-    if (!String.IsNullOrEmpty(path))
-    {
-      saveLogPathText.text = path;
-      PlayerPrefs.SetString("SaveLogPath", path);
-      PlayerPrefs.SetInt("HaveConfig", 1);
-      errorText.text = "Setup save log successfully!";
-      errorText.gameObject.SetActive(true);
-    }
-    else
-    {
-      errorText.text = "Invalid path given!";
-      errorText.gameObject.SetActive(true);
-      UnityEngine.Debug.Log("Invalid path given");
-    }
-  }
-
-  public void ShowFileStatus(int index)
-  {
-    characterBrowseButtons[index].sprite = changeButtonSprite;
-    characterStatus[index].sprite = readyStatusSprite;
-  }
-
-  public void ShowNotiPanel(string text, float delay, float duration)
-  {
-    DOTween.Complete(NotiPanel);
-    DOTween.Complete(NotiText);
-
-    NotiPanel.color = Utilities.SetColorAlpha(NotiPanel.color, 1);
-    NotiText.color = Utilities.SetColorAlpha(NotiText.color, 1);
-    NotiPanel.gameObject.SetActive(true);
-    NotiText.text = text;
-
-    NotiPanel.DOColor(Utilities.SetColorAlpha(NotiPanel.color, 0), duration).SetDelay(delay);
-    NotiText.DOColor(Utilities.SetColorAlpha(NotiText.color, 0), duration)
-    .SetDelay(delay)
-    .OnComplete(() =>
-    {
-      NotiPanel.gameObject.SetActive(false);
-    });
-  }
-
-  public void ShowMapInfo(MapDisplayData mapInfo)
-  {
-    mapName.text = $"{mapInfo.mapName} ({mapInfo.tiles.Count} x {mapInfo.tiles[0].Count})";
-    mapPreview.sprite = mapInfo.mapPreview;
-  }
-
-  //-------------------------------------- Button methods -----------------------------------------
-  public void NextMapButtonClick()
-  {
-    changeMap?.Invoke(true);
-  }
-  public void PrevMapButtonClick()
-  {
-    changeMap?.Invoke(false);
-  }
-  public void LoadAIFolderButtonClick(int index)
-  {
-    loadAIFolder?.Invoke(index);
-  }
-  public void StartGameButtonClick()
-  {
-    //TODO: Transaction
-    startPanel.SetActive(false);
-    inputPanel.SetActive(true);
-  }
-  public void PlayRecordButtonClick()
-  {
-    //TODO: Transaction
-    startPanel.SetActive(false);
-    playRecordPanel.SetActive(true);
-  }
-  public void ExitButtonClick()
-  {
-    Application.Quit();
-  }
-
-  public void LastRecordButtonClick()
-  {
-    if (File.Exists(PlayerPrefs.GetString("LogPath")))
-    {
-      playRecordPanel.SetActive(false);
-      StartCoroutine(StartLoadingPlayScene());
-    }
-    else
-      ShowNotiPanel("Have not recorded any log file or the file has been deleted!", 2, 1);
-  }
-
-  public void ChooseRecordButtonClick()
-  {
-    playRecordPanel.SetActive(false);
-    ChooseRecordBrowser();
-  }
-
-  public IEnumerator StartLoadingPlayScene()
-  {
-    loadingPanel.SetActive(true);
-    var process = SceneManager.LoadSceneAsync("PlayScene");
-    while (!process.isDone)
-    {
-      loadingBar.fillAmount = process.progress;
-      loadingProcessText.text = $"{Mathf.FloorToInt(process.progress * 100)}%";
-      yield return null;
-    }
-  }
-
-  public void PlayButtonClick()
-  {
-    SavePlayerName();
-    inputPanel.SetActive(false);
-    loadingPanel.SetActive(true);
     startGame?.Invoke();
+  }
+  private void CallChangeMap(bool isNext)
+  {
+    changeMap?.Invoke(isNext);
+  }
+  
+  //----------------------------------- Interface methods --------------------------------------------
+  public void StartLoadingPlayScene()
+  {
+    StartCoroutine(loadingPanel.GetComponent<LoadingPanel>().StartLoadingPlayScene());
   }
 
   public void ShowRecordingProcess(int currentTurn, int gameLength)
   {
-    loadingBar.fillAmount = (float)currentTurn / (float)gameLength;
-    loadingProcessText.text = $"Recording Turn: {currentTurn}";
-    if (tips.Length != 0) tipsText.text = $"Tips: {tips.RandomItem()}";
+    loadingPanel.ShowRecordingProcess(currentTurn, gameLength);
   }
 
-  public void BackFromInputPanel()
+  public void ShowNotiPanel(string text, float delay, float duration)
   {
-    inputPanel.SetActive(false);
-    startPanel.SetActive(true);
+    StartCoroutine(notiPanel.ShowNotiPanel(text, delay, duration));
   }
 
-  public void BackFromPlayRecordPanel()
+  public void ShowRecordPanelWhenError(string errorMessage)
   {
-    playRecordPanel.SetActive(false);
-    startPanel.SetActive(true);
+    loadingPanel.GetComponent<LoadingPanel>().ShowErrorPanel(errorMessage);
   }
 
-  public void SettingButtonClick()
+  public void ShowMapInfo(MapDisplayData mapInfo)
   {
-    errorText.gameObject.SetActive(false);
-    btnSettingBack.gameObject.SetActive(true);
-    startPanel.SetActive(false);
-    settingPanel.SetActive(true);
-  }
-
-  public void BackFromSettingPanel()
-  {
-    startPanel.SetActive(true);
-    settingPanel.SetActive(false);
-  }
-
-  public void BrowsePythonPathButtonClick()
-  {
-    ChoosePythonBrowser();
-  }
-
-  public void BrowseSaveLogPathButtonClick()
-  {
-    ChooseLogPathBrowser();
-  }
-
-  public void ShowRecordPanelWhenError()
-  {
-    outputText.text = errorMessage;
-    recordingPanel.SetActive(true);
-  }
-  public void BackFromRecordPanel()
-  {
-    outputText.text = "";
-    recordingPanel.SetActive(false);
-    loadingPanel.SetActive(false);
-    inputPanel.SetActive(true);
+    inputPanel.GetComponent<InputPanel>().ShowMapInfo(mapInfo);
   }
 }

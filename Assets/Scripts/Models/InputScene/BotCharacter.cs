@@ -7,7 +7,6 @@ public class BotCharacter : ICharacterController
 {
   public MapInfo mapInfo;
   public IInputSceneUI uiManager;
-  string name;
   private bool isTimedOut = false;
   private bool isCrashed = false;
   public Character Character { get; set; }
@@ -31,10 +30,8 @@ public class BotCharacter : ICharacterController
   private List<List<Node>> listNodes = new List<List<Node>>();
   private Node nextNode;
 
-  public BotCharacter(string name)
+  public BotCharacter()
   {
-    this.name = name;
-
     switch (Character.characterRole)
     {
       case CharacterRole.Planter:

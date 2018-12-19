@@ -11,19 +11,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6ffd5632ca894dd49984d434092883a1, type: 3}
   m_Name: Booboolong
   m_EditorClassIdentifier: 
-  mapConfig:
-    MAP_NAME: Booboolong
-    MAP_WIDTH: 9
-    MAP_HEIGHT: 7
-    WATER_POSES_UNITY:
-    - {x: 4, y: 1}
-    - {x: 2, y: 3}
-    - {x: 6, y: 3}
-    - {x: 4, y: 5}
-    WILDBERRY_POSES_UNITY:
-    - {x: 2, y: 1}
-    - {x: 6, y: 1}
-    - {x: 4, y: 3}
-    - {x: 2, y: 5}
-    - {x: 6, y: 5}
-    MAP_PREVIEW: {fileID: 21300000, guid: f24c56394aea5e641b3fde152140b2a1, type: 3}
+  mapDisplayData:
+    mapName: Booboolong
+    mapPreview: {fileID: 21300000, guid: b82337934eeaf9f4f8dc12093b38b0c7, type: 3}
+    mapTileData: {fileID: 2800000, guid: 51e846b5ec2bda5459ce280cc0b72d4f, type: 3}
+    typeColors: {fileID: 11400000, guid: e43491775b34fab4f903c2cd64225427, type: 2}

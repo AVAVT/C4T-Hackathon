@@ -16,7 +16,7 @@ public class GrpcInputManager : MonoBehaviour
 {
   public MapModel mapModel;
   public IInputSceneUI uiManager;
-
+  private ErrorRecorder errorRecorder;
   //characters
   TeamRoleMap<ICharacterController> characters = new TeamRoleMap<ICharacterController>();
   private bool[] isBot;
@@ -39,96 +39,20 @@ public class GrpcInputManager : MonoBehaviour
     {
       isBot[i] = true;
     }
-    uiManager = GetComponent<InputSceneUI>();
-    uiManager.StartGame = StartGame;
-    uiManager.LoadAIFolder = OpenFileBrowser;
     uiManager.ChangeMap = ChangeMap;
+    uiManager.SetIsBot = SetIsBot;
+    uiManager.StartGame = StartGame;
   }
 
-  private bool isFolderContainPython(string path)
+  private void SetIsBot(int index)
   {
-    foreach (var dir in Directory.GetFiles(path))
-    {
-      if (Path.GetFileName(dir).Equals("main.py")) return true;
-    }
-    return false;
-  }
-
-  public void OpenFileBrowser(int index)
-  {
-    string path = FileBrowser.OpenSingleFolder("Choose AI folder");
-    if (!String.IsNullOrEmpty(path) && isFolderContainPython(path))
-    {
-      var copyPath = GetPathByIndex(index, path);
-      EmptyDirectory(copyPath);
-      CopyAllDirectory(path, copyPath);
-      uiManager.SaveErrorMessage($"Copied file to path: {copyPath}", false);
-      uiManager.ShowNotiPanel($"Import folder containing main.py successfully!", 2, 1);
-      uiManager.ShowFileStatus(index);
-      isBot[index] = false;
-    }
-    else
-    {
-      uiManager.ShowNotiPanel("Invalid path given or folder does not contain main.py file!", 2, 1);
-    }
-  }
-
-  private void CopyAllDirectory(string sourceDir, string targetDir)
-  {
-    foreach (var dir in Directory.GetDirectories(sourceDir, "*", SearchOption.AllDirectories))
-      Directory.CreateDirectory(Path.Combine(targetDir, dir.Substring(sourceDir.Length + 1)));
-    foreach (var fileName in Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories))
-      File.Copy(fileName, Path.Combine(targetDir, fileName.Substring(sourceDir.Length + 1)), true);
-  }
-
-  private void EmptyDirectory(string path)
-  {
-    if (Directory.Exists(path))
-    {
-      Directory.Delete(path, true);
-    }
-    Directory.CreateDirectory(path);
-  }
-
-  private string GetPathByIndex(int index, string path)
-  {
-    string tempPath;
-    switch (index)
-    {
-      case 0:
-        tempPath = $"{Application.streamingAssetsPath}/red_planter";
-        Directory.CreateDirectory(tempPath);
-        return tempPath;
-      case 1:
-        tempPath = $"{Application.streamingAssetsPath}/red_harvester";
-        Directory.CreateDirectory(tempPath);
-        return tempPath;
-      case 2:
-        tempPath = $"{Application.streamingAssetsPath}/red_worm";
-        Directory.CreateDirectory(tempPath);
-        return tempPath;
-      case 3:
-        tempPath = $"{Application.streamingAssetsPath}/blue_planter";
-        Directory.CreateDirectory(tempPath);
-        return tempPath;
-      case 4:
-        tempPath = $"{Application.streamingAssetsPath}/blue_harvester";
-        Directory.CreateDirectory(tempPath);
-        return tempPath;
-      case 5:
-        tempPath = $"{Application.streamingAssetsPath}/blue_worm";
-        Directory.CreateDirectory(tempPath);
-        return tempPath;
-      default:
-        throw new System.Exception("Index of out bound!!!");
-    }
+    isBot[index] = false;
   }
 
   //-------------------------------------------- Read Python -------------------------------------------------
-  public TeamRoleMap<ICharacterController> InitCharacter(MapInfo mapInfo, GameConfig gameRule)
+  public TeamRoleMap<ICharacterController> InitCharacter(MapInfo mapInfo, GameConfig gameRule, ErrorRecorder errorRecorder)
   {
     var controllers = new TeamRoleMap<ICharacterController>();
-
     int botIndex = 0; // TODO change bot to use the same configurable system as controllers
     foreach (var team in gameRule.availableTeams)
     {
@@ -137,14 +61,13 @@ public class GrpcInputManager : MonoBehaviour
         if (!isBot[botIndex])
         {
           PythonCharacter character = new PythonCharacter(channel);
-          character.uiManager = this.uiManager;
           character.CancelStartGameTask = StopRecordGameWhenError;
 
           controllers.SetItem(team, role, character);
         }
         else
         {
-          BotCharacter character = new BotCharacter($"Bot-{botIndex + 1}");
+          BotCharacter character = new BotCharacter();
           character.uiManager = this.uiManager;
           character.mapInfo = mapInfo;
 
@@ -230,14 +153,14 @@ public class GrpcInputManager : MonoBehaviour
   {
     if (e.Data != null)
     {
-      uiManager.SaveErrorMessage(e.Data, false);
+      errorRecorder.RecordErrorMessage(e.Data, false);
     }
   }
   private void OnErrorReceived(object sender, DataReceivedEventArgs e)
   {
     if (e.Data != null)
     {
-      uiManager.SaveErrorMessage(e.Data, true);
+      errorRecorder.RecordErrorMessage(e.Data, true);
     }
   }
   private string ShowBot()
@@ -265,21 +188,19 @@ public class GrpcInputManager : MonoBehaviour
   {
     UnityEngine.Debug.Log("Cancel task!");
     tokenSource.Cancel();
-    // tokenSource.Token.ThrowIfCancellationRequested();
   }
 
   async void StartRecordGame(CancellationToken token)
   {
     GameConfig gameRule = GameConfig.DefaultGameRule();
+    errorRecorder = new ErrorRecorder();
 
     var mapInfo = mapModel.listMap[currentMap].mapDisplayData.ToMapInfo(gameRule);
-
     var gameLogic = GameLogic.GameLogicForPlay(gameRule, mapInfo);
     var recordManager = gameObject.AddComponent<RecordManager>();
+
     // TODO record game rule
-
-    characters = InitCharacter(mapInfo, gameRule);
-
+    characters = InitCharacter(mapInfo, gameRule, errorRecorder);
     gameLogic.InitializeGame(characters);
 
     var task = gameLogic.PlayGame(
@@ -291,20 +212,20 @@ public class GrpcInputManager : MonoBehaviour
 
     if (task.IsFaulted)
     {
-      uiManager.SaveErrorMessage($"Start game fail! Error message: {task.Exception}", true);
-      uiManager.ShowRecordPanelWhenError();
+      errorRecorder.RecordErrorMessage($"Start game fail! Error message: {task.Exception}", true);
+      uiManager.ShowRecordPanelWhenError(errorRecorder.ErrorMessage);
     }
     else if (task.IsCanceled)
     {
-      uiManager.SaveErrorMessage($"Start game fail! Start game task is canceled! Error message: {task.Exception}", true);
-      uiManager.ShowRecordPanelWhenError();
+      errorRecorder.RecordErrorMessage($"Start game fail! Start game task is canceled! Error message: {task.Exception}", true);
+      uiManager.ShowRecordPanelWhenError(errorRecorder.ErrorMessage);
     }
     else
     {
-      if (!uiManager.HaveError)
+      if (!errorRecorder.HaveError)
         StartCoroutine(ShowLogPathNoti());
       else
-        uiManager.ShowRecordPanelWhenError();
+        uiManager.ShowRecordPanelWhenError(errorRecorder.ErrorMessage);
     }
   }
 
@@ -314,7 +235,7 @@ public class GrpcInputManager : MonoBehaviour
     pythonProcess.Kill();
     pythonProcess.Dispose();
     yield return new WaitForSeconds(4);
-    yield return uiManager.StartLoadingPlayScene();
+    uiManager.StartLoadingPlayScene();
   }
 
   void ChangeMap(bool isNext)

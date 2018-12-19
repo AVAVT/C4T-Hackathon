@@ -1,12 +1,20 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Serialization;
 
-public class TeamRoleMap<T> : IEnumerable<T>
+[System.Serializable]
+public class TeamRoleMap<T> : IEnumerable<T>, ISerializable
 {
   private Dictionary<Team, Dictionary<CharacterRole, T>> map;
   private IEnumerable<T> flattenedMap;
-  int position = -1;
+
+  protected TeamRoleMap(SerializationInfo info, StreamingContext context)
+  {
+    map = (Dictionary<Team, Dictionary<CharacterRole, T>>) info.GetValue("map", map.GetType());
+    flattenedMap = (IEnumerable<T>) info.GetValue("flattenedMap", flattenedMap.GetType());
+  }
+
   public TeamRoleMap()
   {
     map = new Dictionary<Team, Dictionary<CharacterRole, T>>();
@@ -85,5 +93,11 @@ public class TeamRoleMap<T> : IEnumerable<T>
   IEnumerator IEnumerable.GetEnumerator()
   {
     return flattenedMap.GetEnumerator();
+  }
+
+  public void GetObjectData(SerializationInfo info, StreamingContext context)
+  {
+    info.AddValue("map", map);
+    info.AddValue("flattenedMap", flattenedMap);
   }
 }
