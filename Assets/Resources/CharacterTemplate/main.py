@@ -13,8 +13,8 @@ class Character:
 
     def do_start(self, gameRule, json):
         #method for preparing
-        game_state = j.loads(json)
         self.gameRule = j.loads(gameRule)
+        game_state = j.loads(json)
         self.team = game_state['allies'][self.characterRole]['team']
         return "READY"
 

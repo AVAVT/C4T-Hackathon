@@ -52,7 +52,7 @@ public class PythonCharacter : ICharacterController, IRuntimeCharacter
     
     if (!isCrashed && !isTimedOut)
     {
-      var ct = new CancellationTokenSource(300); //init server need at least 200ms
+      var ct = new CancellationTokenSource(500); //init server need at least 200ms
       var tcs = new TaskCompletionSource<bool>();
       ct.Token.Register(() => tcs.TrySetCanceled(), useSynchronizationContext: false);
 
@@ -118,7 +118,8 @@ public class PythonCharacter : ICharacterController, IRuntimeCharacter
   {
     try
     {
-      AIResponse reply = client.ReturnAIResponse(new AIRequest { Index = (int)Character.team * 3 + (int)Character.characterRole, GameRule = gameRule, ServerGameState = json});
+      var index = (int)Character.team * 3 + (int)Character.characterRole;
+      AIResponse reply = client.ReturnAIResponse(new AIRequest { Index = index, GameRule = gameRule, ServerGameState = json});
       return reply.Action;
     }
     catch (System.Exception ex)

@@ -1,0 +1,392 @@
+{
+  "gameConfig": {
+    "sightDistance": 2,
+    "gameLength": 100,
+    "plantFruitTime": 5,
+    "wildberryFruitTime": 10,
+    "harvesterMaxCapacity": 5,
+    "fruitScoreValues": {
+      "TOMATO": 1,
+      "PUMPKIN": 1,
+      "WILDBERRY": 2
+    },
+    "availableTeams": [
+      0,
+      1
+    ],
+    "availableRoles": [
+      0,
+      1,
+      2
+    ]
+  },
+  "log": [
+    {
+      "serverGameState": {
+        "turn": 0,
+        "redScore": 0,
+        "blueScore": 0,
+        "characters": {
+          "map": {
+            "Red": {
+              "Planter": {
+                "x": 0,
+                "y": 0,
+                "team": 0,
+                "characterRole": 0,
+                "isScared": false,
+                "cancelAction": false,
+                "fruitCarrying": 0,
+                "numTreePlanted": 0,
+                "numWormCaught": 0,
+                "numFruitHarvested": 0,
+                "numFruitDelivered": 0,
+                "numTreeDestroyed": 0,
+                "numHarvesterScared": 0
+              },
+              "Harvester": {
+                "x": 0,
+                "y": 0,
+                "team": 0,
+                "characterRole": 1,
+                "isScared": false,
+                "cancelAction": false,
+                "fruitCarrying": 0,
+                "numTreePlanted": 0,
+                "numWormCaught": 0,
+                "numFruitHarvested": 0,
+                "numFruitDelivered": 0,
+                "numTreeDestroyed": 0,
+                "numHarvesterScared": 0
+              },
+              "Worm": {
+                "x": 0,
+                "y": 4,
+                "team": 0,
+                "characterRole": 2,
+                "isScared": false,
+                "cancelAction": false,
+                "fruitCarrying": 0,
+                "numTreePlanted": 0,
+                "numWormCaught": 0,
+                "numFruitHarvested": 0,
+                "numFruitDelivered": 0,
+                "numTreeDestroyed": 0,
+                "numHarvesterScared": 0
+              }
+            },
+            "Blue": {
+              "Planter": {
+                "x": 6,
+                "y": 4,
+                "team": 1,
+                "characterRole": 0,
+                "isScared": false,
+                "cancelAction": false,
+                "fruitCarrying": 0,
+                "numTreePlanted": 0,
+                "numWormCaught": 0,
+                "numFruitHarvested": 0,
+                "numFruitDelivered": 0,
+                "numTreeDestroyed": 0,
+                "numHarvesterScared": 0
+              },
+              "Harvester": {
+                "x": 6,
+                "y": 4,
+                "team": 1,
+                "characterRole": 1,
+                "isScared": false,
+                "cancelAction": false,
+                "fruitCarrying": 0,
+                "numTreePlanted": 0,
+                "numWormCaught": 0,
+                "numFruitHarvested": 0,
+                "numFruitDelivered": 0,
+                "numTreeDestroyed": 0,
+                "numHarvesterScared": 0
+              },
+              "Worm": {
+                "x": 6,
+                "y": 0,
+                "team": 1,
+                "characterRole": 2,
+                "isScared": false,
+                "cancelAction": false,
+                "fruitCarrying": 0,
+                "numTreePlanted": 0,
+                "numWormCaught": 0,
+                "numFruitHarvested": 0,
+                "numFruitDelivered": 0,
+                "numTreeDestroyed": 0,
+                "numHarvesterScared": 0
+              }
+            }
+          }
+        },
+        "map": [
+          [
+            {
+              "x": 0,
+              "y": 0,
+              "type": 6,
+              "growState": 0,
+              "alwaysVisible": true
+            },
+            {
+              "x": 0,
+              "y": 1,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 0,
+              "y": 2,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 0,
+              "y": 3,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 0,
+              "y": 4,
+              "type": 8,
+              "growState": 0,
+              "alwaysVisible": true
+            }
+          ],
+          [
+            {
+              "x": 1,
+              "y": 0,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 1,
+              "y": 1,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 1,
+              "y": 2,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 1,
+              "y": 3,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 1,
+              "y": 4,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            }
+          ],
+          [
+            {
+              "x": 2,
+              "y": 0,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 2,
+              "y": 1,
+              "type": 1,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 2,
+              "y": 2,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 2,
+              "y": 3,
+              "type": 3,
+              "growState": 10,
+              "alwaysVisible": false
+            },
+            {
+              "x": 2,
+              "y": 4,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            }
+          ],
+          [
+            {
+              "x": 3,
+              "y": 0,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 3,
+              "y": 1,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 3,
+              "y": 2,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 3,
+              "y": 3,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 3,
+              "y": 4,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            }
+          ],
+          [
+            {
+              "x": 4,
+              "y": 0,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 4,
+              "y": 1,
+              "type": 3,
+              "growState": 10,
+              "alwaysVisible": false
+            },
+            {
+              "x": 4,
+              "y": 2,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 4,
+              "y": 3,
+              "type": 1,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 4,
+              "y": 4,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            }
+          ],
+          [
+            {
+              "x": 5,
+              "y": 0,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 5,
+              "y": 1,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 5,
+              "y": 2,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 5,
+              "y": 3,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 5,
+              "y": 4,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            }
+          ],
+          [
+            {
+              "x": 6,
+              "y": 0,
+              "type": 9,
+              "growState": 0,
+              "alwaysVisible": true
+            },
+            {
+              "x": 6,
+              "y": 1,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 6,
+              "y": 2,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 6,
+              "y": 3,
+              "type": 2,
+              "growState": 0,
+              "alwaysVisible": false
+            },
+            {
+              "x": 6,
+              "y": 4,
+              "type": 7,
+              "growState": 0,
+              "alwaysVisible": true
+            }
+          ]
+        ]
+      },
+      "actions": null
+    }
+  ]
+}

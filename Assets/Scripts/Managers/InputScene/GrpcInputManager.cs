@@ -123,7 +123,7 @@ public class GrpcInputManager : MonoBehaviour
       {
         var serverPath = $"{Application.streamingAssetsPath}/ai_server.py";
         pythonProcess = new Process();
-        pythonProcess.StartInfo.CreateNoWindow= true;
+        // pythonProcess.StartInfo.CreateNoWindow= true;
         pythonProcess.StartInfo.FileName = pythonPath;
         pythonProcess.StartInfo.Arguments = serverPath;
         pythonProcess.StartInfo.RedirectStandardOutput = true;

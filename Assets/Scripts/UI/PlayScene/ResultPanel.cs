@@ -55,7 +55,7 @@ public class ResultPanel : MonoBehaviour
       int checkTurn = endTurn;
       while (logs[checkTurn].serverGameState.blueScore == logs[checkTurn].serverGameState.redScore)
       {
-        checkTurn++;
+        checkTurn--;
         if (logs[checkTurn].serverGameState.blueScore > logs[checkTurn].serverGameState.redScore) winTeam = Team.Blue;
         else if (logs[checkTurn].serverGameState.blueScore > logs[checkTurn].serverGameState.redScore) winTeam = Team.Red;
       }
