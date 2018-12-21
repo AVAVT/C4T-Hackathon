@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
+using Newtonsoft.Json;
 
 public static class ObjectExtensions
 {
@@ -17,13 +18,8 @@ public static class ObjectExtensions
     {
       return default(T);
     }
-
-    IFormatter formatter = new BinaryFormatter();
-    using (Stream stream = new MemoryStream())
-    {
-      formatter.Serialize(stream, source);
-      stream.Seek(0, SeekOrigin.Begin);
-      return (T)formatter.Deserialize(stream);
-    }
+    
+    var json = JsonConvert.SerializeObject(source);
+    return JsonConvert.DeserializeObject<T>(json);
   }
 }

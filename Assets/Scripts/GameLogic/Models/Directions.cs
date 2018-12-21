@@ -1,3 +1,4 @@
+using System;
 using System.Numerics;
 
 public class Directions
@@ -13,7 +14,7 @@ public static class DirectionStringExtension
 {
   public static Vector2 ToDirectionVector(this string direction)
   {
-    switch (direction)
+    switch (direction.ToUpper())
     {
       case Directions.UP: return new Vector2(0, -1);
       case Directions.DOWN: return new Vector2(0, 1);

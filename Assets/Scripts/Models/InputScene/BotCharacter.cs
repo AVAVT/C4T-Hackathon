@@ -30,9 +30,9 @@ public class BotCharacter : ICharacterController
   private List<List<Node>> listNodes = new List<List<Node>>();
   private Node nextNode;
 
-  public BotCharacter()
+  public BotCharacter(CharacterRole role)
   {
-    switch (Character.characterRole)
+    switch (role)
     {
       case CharacterRole.Planter:
         DoThink = DoPlanterThink;
@@ -50,8 +50,29 @@ public class BotCharacter : ICharacterController
 
   public async Task DoStart(GameState gameState, GameConfig gameRule)
   {
-    // TODO use the same timeout config as DoTurn
-    // TODO convert map to grid node
+    var ct = new CancellationTokenSource(100);
+    var tcs = new TaskCompletionSource<bool>();
+    ct.Token.Register(() => tcs.TrySetCanceled(), useSynchronizationContext: false);
+
+    await Task.Factory.StartNew(() => ConvertMapToGridNode(gameState, gameRule), ct.Token).ContinueWith((task) =>
+    {
+      if (task.IsFaulted)
+      {
+        isCrashed = true;
+      }
+      else if (task.IsCanceled || ct.IsCancellationRequested)
+      {
+        isTimedOut = true;
+      }
+      else
+      {
+        ct.Cancel();
+      }
+    });
+  }
+
+  private void ConvertMapToGridNode(GameState gameState, GameConfig gameRule)
+  {
     foreach (var row in gameState.map)
     {
       List<Node> nodeRow = new List<Node>();
@@ -73,7 +94,7 @@ public class BotCharacter : ICharacterController
     ct.Token.Register(() => tcs.TrySetCanceled(), useSynchronizationContext: false);
 
     string result = Directions.STAY;
-    await Task.Factory.StartNew(() => DoThink?.Invoke(gameState, gameRule)).ContinueWith((task) =>
+    await Task.Factory.StartNew(() => DoThink?.Invoke(gameState, gameRule), ct.Token).ContinueWith((task) =>
     {
       if (task.IsFaulted)
       {

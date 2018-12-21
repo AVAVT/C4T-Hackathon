@@ -1,20 +1,17 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
+using Newtonsoft.Json;
 
+[JsonObject]
 [System.Serializable]
 public class TeamRoleMap<T> : IEnumerable<T>, ISerializable
 {
+  [JsonProperty(TypeNameHandling=TypeNameHandling.None)]
   private Dictionary<Team, Dictionary<CharacterRole, T>> map;
   private IEnumerable<T> flattenedMap;
-
-  protected TeamRoleMap(SerializationInfo info, StreamingContext context)
-  {
-    map = (Dictionary<Team, Dictionary<CharacterRole, T>>) info.GetValue("map", map.GetType());
-    flattenedMap = (IEnumerable<T>) info.GetValue("flattenedMap", flattenedMap.GetType());
-  }
-
   public TeamRoleMap()
   {
     map = new Dictionary<Team, Dictionary<CharacterRole, T>>();
@@ -97,7 +94,13 @@ public class TeamRoleMap<T> : IEnumerable<T>, ISerializable
 
   public void GetObjectData(SerializationInfo info, StreamingContext context)
   {
-    info.AddValue("map", map);
+    info.AddValue("map", map, map.GetType());
     info.AddValue("flattenedMap", flattenedMap);
+  }
+
+  public TeamRoleMap(SerializationInfo info, StreamingContext context)
+  {
+    map = (Dictionary<Team, Dictionary<CharacterRole, T>>) info.GetValue("map", map.GetType());
+    flattenedMap = (List<T>) info.GetValue("flattenedMap", flattenedMap.GetType());    
   }
 }

@@ -50,7 +50,6 @@ public class GameLogic
   public async Task PlayGame(CancellationToken cancellationToken, IReplayRecorder recorder = null)
   {
     await DoStart(recorder);
-
     ServerGameState.turn++;
 
     while (ServerGameState.turn < gameRule.gameLength && !cancellationToken.IsCancellationRequested)
@@ -98,7 +97,24 @@ public class GameLogic
 
     ExecuteTurn(actions);
     recorder?.LogTurn(ServerGameState, actions);
+    ResetCancelAction(ServerGameState, gameRule);
     ServerGameState.turn++;
+  }
+
+  private void ResetCancelAction(ServerGameState serverGameState, GameConfig gameRule)
+  {
+    foreach (var team in gameRule.availableTeams)
+    {
+      foreach (var role in gameRule.availableRoles)
+      {
+        if (serverGameState.characters.GetItem(team, role).cancelAction)
+        {
+          var currentCharacter = serverGameState.characters.GetItem(team, role);
+          currentCharacter.cancelAction = false;
+          serverGameState.characters.SetItem(team, role, currentCharacter);
+        }
+      }
+    }
   }
 
   /// <summary>Progress the game state with given actions</summary>
@@ -142,53 +158,44 @@ public class GameLogic
     }
 
     CancelMovementForCounterRolesSwapingPlaces(targetPoses, actions);
-
     ServerGameState.characters = targetPoses;
   }
 
-  // TODO refactor to prevent changing actions
   void CancelMovementForCounterRolesSwapingPlaces(TeamRoleMap<Character> targetPoses, List<TurnAction> actions)
   {
     if (AreSwapingPlaces(targetPoses, Team.Red, CharacterRole.Worm, Team.Blue, CharacterRole.Planter))
     {
       targetPoses.ReplaceWithItemFrom(ServerGameState.characters, Team.Red, CharacterRole.Worm);
-      SetActionToStay(actions, Team.Red, CharacterRole.Worm);
+      targetPoses.SetItem(Team.Red, CharacterRole.Worm, CancelCharacterAction(targetPoses.GetItem(Team.Red, CharacterRole.Worm)));
     }
     else if (AreSwapingPlaces(targetPoses, Team.Red, CharacterRole.Worm, Team.Blue, CharacterRole.Harvester))
     {
       targetPoses.ReplaceWithItemFrom(ServerGameState.characters, Team.Blue, CharacterRole.Harvester);
-      SetActionToStay(actions, Team.Blue, CharacterRole.Harvester);
+      targetPoses.SetItem(Team.Blue, CharacterRole.Harvester, CancelCharacterAction(targetPoses.GetItem(Team.Blue, CharacterRole.Harvester)));
     }
 
     if (AreSwapingPlaces(targetPoses, Team.Blue, CharacterRole.Worm, Team.Red, CharacterRole.Planter))
     {
       targetPoses.ReplaceWithItemFrom(ServerGameState.characters, Team.Blue, CharacterRole.Worm);
-      SetActionToStay(actions, Team.Blue, CharacterRole.Worm);
+      targetPoses.SetItem(Team.Blue, CharacterRole.Worm, CancelCharacterAction(targetPoses.GetItem(Team.Blue, CharacterRole.Worm)));
     }
     else if (AreSwapingPlaces(targetPoses, Team.Blue, CharacterRole.Worm, Team.Red, CharacterRole.Harvester))
     {
       targetPoses.ReplaceWithItemFrom(ServerGameState.characters, Team.Red, CharacterRole.Harvester);
-      SetActionToStay(actions, Team.Red, CharacterRole.Harvester);
+      targetPoses.SetItem(Team.Red, CharacterRole.Harvester, CancelCharacterAction(targetPoses.GetItem(Team.Red, CharacterRole.Harvester)));
     }
+  }
+
+  Character CancelCharacterAction(Character character)
+  {
+    character.cancelAction = true;
+    return character;
   }
 
   bool AreSwapingPlaces(TeamRoleMap<Character> targetPoses, Team char1Team, CharacterRole char1Role, Team char2Team, CharacterRole char2Role)
   {
     return targetPoses.GetItem(char1Team, char1Role).DistanceTo(ServerGameState.characters.GetItem(char2Team, char2Role)) == 0
           && targetPoses.GetItem(char2Team, char2Role).DistanceTo(ServerGameState.characters.GetItem(char1Team, char1Role)) == 0;
-  }
-  void SetActionToStay(List<TurnAction> listActions, Team team, CharacterRole characterRole)
-  {
-    for (int i = 0; i < listActions.Count; i++)
-    {
-      if (listActions[i].role == characterRole && listActions[i].team == team)
-      {
-        var temp = listActions[i];
-        temp.direction = Directions.STAY;
-        listActions[i] = temp;
-        break;
-      }
-    }
   }
 
   void DoCatchWorm(ServerGameState serverGameState)
@@ -204,9 +211,9 @@ public class GameLogic
         var newPlanterState = planter;
 
         var wormNewPosition = mapInfo.startingPositions.GetItem(worm.team, worm.characterRole);
-
         newWormState.x = (int)wormNewPosition.X;
         newWormState.y = (int)wormNewPosition.Y;
+        UnityEngine.Debug.Log("Turn" +serverGameState.turn + " - "+ wormNewPosition.X + " - "+wormNewPosition.Y);
         serverGameState.characters.SetItem(worm.team, worm.characterRole, newWormState);
 
         newPlanterState.numWormCaught++;
@@ -364,16 +371,10 @@ public class GameLogic
       foreach (var role in gameRule.availableRoles)
       {
         var pos = mapInfo.startingPositions.GetItem(team, role);
-        var character = new Character(
-          (int)pos.X,
-          (int)pos.Y,
-          team,
-          role
-        );
+        Character character = new Character((int)pos.X, (int)pos.Y, team, role);
         gameState.characters.SetItem(team, role, character);
       }
     }
-
     return gameState;
   }
 

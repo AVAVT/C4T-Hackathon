@@ -17,34 +17,31 @@ public class MapDisplayData : MapInfo
     {
       mapInfo.tiles.Add(new List<TileType>());
 
-      for (int y = 0; y < mapTileData.height; y++)
+      for (int y = mapTileData.height-1; y>= 0; y--)
       {
         TileType tileType = TypeFromColor(mapTileData.GetPixel(x, y));
         mapInfo.tiles[x].Add(tileType);
 
-
-        // TODO use C# 7
         if (tileType == TileType.RED_BOX)
         {
-          mapInfo.startingPositions.SetItem(Team.Red, CharacterRole.Planter, new System.Numerics.Vector2(x, y));
-          mapInfo.startingPositions.SetItem(Team.Red, CharacterRole.Harvester, new System.Numerics.Vector2(x, y));
+          mapInfo.startingPositions.SetItem(Team.Red, CharacterRole.Planter, new System.Numerics.Vector2(x, mapTileData.height-y-1));
+          mapInfo.startingPositions.SetItem(Team.Red, CharacterRole.Harvester, new System.Numerics.Vector2(x, mapTileData.height-y-1));
         }
         else if (tileType == TileType.BLUE_BOX)
         {
-          mapInfo.startingPositions.SetItem(Team.Blue, CharacterRole.Planter, new System.Numerics.Vector2(x, y));
-          mapInfo.startingPositions.SetItem(Team.Blue, CharacterRole.Harvester, new System.Numerics.Vector2(x, y));
+          mapInfo.startingPositions.SetItem(Team.Blue, CharacterRole.Planter, new System.Numerics.Vector2(x, mapTileData.height-y-1));
+          mapInfo.startingPositions.SetItem(Team.Blue, CharacterRole.Harvester, new System.Numerics.Vector2(x, mapTileData.height-y-1));
         }
         else if (tileType == TileType.RED_ROCK)
         {
-          mapInfo.startingPositions.SetItem(Team.Red, CharacterRole.Worm, new System.Numerics.Vector2(x, y));
+          mapInfo.startingPositions.SetItem(Team.Red, CharacterRole.Worm, new System.Numerics.Vector2(x, mapTileData.height-y-1));
         }
         else if (tileType == TileType.BLUE_ROCK)
         {
-          mapInfo.startingPositions.SetItem(Team.Blue, CharacterRole.Worm, new System.Numerics.Vector2(x, y));
+          mapInfo.startingPositions.SetItem(Team.Blue, CharacterRole.Worm, new System.Numerics.Vector2(x, mapTileData.height-y-1));
         }
       }
     }
-
     return mapInfo;
   }
 

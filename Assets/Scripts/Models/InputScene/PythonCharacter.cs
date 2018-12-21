@@ -48,17 +48,35 @@ public class PythonCharacter : ICharacterController, IRuntimeCharacter
 
   public async Task DoStart(GameState gameState, GameConfig gameRule)
   {
-    // TODO use the same timeout config as DoTurn
-    string json = JsonConvert.SerializeObject(gameState);
-    try
+    string result = "";
+    
+    if (!isCrashed && !isTimedOut)
     {
-      AIResponse reply = client.ReturnAIResponse(new AIRequest { Json = json });
+      var ct = new CancellationTokenSource(300); //init server need at least 200ms
+      var tcs = new TaskCompletionSource<bool>();
+      ct.Token.Register(() => tcs.TrySetCanceled(), useSynchronizationContext: false);
+
+      string json = JsonConvert.SerializeObject(gameState);
+      await Task<string>.Factory.StartNew(() => GetAIResponse(json), ct.Token).ContinueWith((task) =>
+      {
+        if (task.IsFaulted)
+        {
+          UnityEngine.Debug.Log("Crashed!");
+          isCrashed = true;
+        }
+        else if (task.IsCanceled || ct.IsCancellationRequested)
+        {
+          UnityEngine.Debug.Log("Time out!");
+          isTimedOut = true;
+        }
+        else
+        {
+          ct.Cancel();
+          result = task.Result;
+        }
+      });
     }
-    catch (System.Exception ex)
-    {
-      errorRecorder.RecordErrorMessage($"Get AI Response fail! Fail message: {ex}", true);
-      cancelStartGameTask?.Invoke();
-    }
+    if (result != "READY" && !isTimedOut) isCrashed = true;
   }
 
   public async Task<string> DoTurn(GameState gameState, GameConfig gameRule)
@@ -66,7 +84,7 @@ public class PythonCharacter : ICharacterController, IRuntimeCharacter
     UpdateCharacter(gameState);
 
     string result = Directions.STAY;
-    if (!isCrashed && !IsTimedOut)
+    if (!isCrashed && !isTimedOut)
     {
       var ct = new CancellationTokenSource(100);
       var tcs = new TaskCompletionSource<bool>();

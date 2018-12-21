@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 public interface IPlaySceneUI
 {
-  Action PlayLog { set; }
+  Action<bool> PlayLog { set; }
   Action StopLog { set; }
   Action NextTurn { set; }
   Action PrevTurn { set; }

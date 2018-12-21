@@ -5,6 +5,7 @@ using System.IO;
 using Newtonsoft.Json;
 using UnityEngine;
 using DG.Tweening;
+using Newtonsoft.Json.Linq;
 
 public class DisplayRecordManager : MonoBehaviour
 {
@@ -51,10 +52,9 @@ public class DisplayRecordManager : MonoBehaviour
   private PlayRecordState playRecordState = PlayRecordState.Stop;
   private int currentTurn = 0;
 
-  void Awake()
+  void Start()
   {
     ChangeGameSpeedButtonClick(1);
-    uiManager = GetComponent<PlayRecordUI>();
 
     uiManager.PlayLog = PlayButtonClick;
     uiManager.StopLog = StopPlayRecord;
@@ -68,7 +68,25 @@ public class DisplayRecordManager : MonoBehaviour
   void GetLogFromPath(string path)
   {
     string json = File.ReadAllText(path);
-    gameRecordData = JsonConvert.DeserializeObject<GameRecordLogData>(json);
+    var data = JObject.Parse(json);
+    var gameConfig = data["gameConfig"];
+    var logs = data["log"].ToObject<List<RecordModel>>();
+
+    gameRecordData = new GameRecordLogData();
+    gameRecordData.gameConfig = new GameConfig(
+      gameConfig["sightDistance"].Value<int>(),
+      gameConfig["gameLength"].Value<int>(),
+      gameConfig["plantFruitTime"].Value<int>(),
+      gameConfig["wildberryFruitTime"].Value<int>(),
+      gameConfig["fruitScoreValues"]["TOMATO"].Value<int>(),
+      gameConfig["fruitScoreValues"]["WILDBERRY"].Value<int>(),
+      gameConfig["harvesterMaxCapacity"].Value<int>(),
+      gameConfig["availableTeams"].ToObject<List<Team>>(),
+      gameConfig["availableRoles"].ToObject<List<CharacterRole>>()
+    );
+
+    gameRecordData.log = logs;
+
     mapInfo = gameRecordData.log[currentTurn].serverGameState.map;
     rows = gameRecordData.log[currentTurn].serverGameState.map[0].Count;
     cols = gameRecordData.log[currentTurn].serverGameState.map.Count;
@@ -98,7 +116,7 @@ public class DisplayRecordManager : MonoBehaviour
     uiManager.DisplayGameInfo(listNames, gameRecordData.log);
     uiManager.DisplayTurnInfo(currentTurn, gameRecordData.log[currentTurn].serverGameState.blueScore, gameRecordData.log[currentTurn].serverGameState.redScore);
     InitGrid();
-    InitCharacter();
+    InitCharacter(gameRecordData.gameConfig);
   }
 
   IEnumerator PlayLogs(bool isContinue = false)
@@ -117,9 +135,10 @@ public class DisplayRecordManager : MonoBehaviour
   void ChangeMap(int currentTurn)
   {
     var currentMap = gameRecordData.log[currentTurn].serverGameState.map;
-    for (int row = 0; row < rows; row++)
+
+    for (int row = 0; row < cols; row++)
     {
-      for (int col = 0; col < cols; col++)
+      for (int col = 0; col < rows; col++)
       {
         if (mapInfo[row][col].type != currentMap[row][col].type || mapInfo[row][col].growState != currentMap[row][col].growState)
         {
@@ -159,14 +178,12 @@ public class DisplayRecordManager : MonoBehaviour
         var characterGO = characterGOs.GetItem(action.team, action.role);
         if (action.timedOut)
         {
-          //TODO: Show time out
           Debug.Log($"AI of {currentCharacter.characterRole} - team {currentCharacter.team} is time out!");
           characterGO.GetComponent<DisplayCharacter>().StartShowCharacterNoti(1, emoTimeOut);
           uiManager.DisplayCharacterStatus((int)action.team * 3 + (int)action.role, "Time out");
         }
         else if (action.crashed)
         {
-          //TODO: Show is crashed
           Debug.Log($"AI of {currentCharacter.characterRole} - team {currentCharacter.team} is crashed!");
           characterGO.GetComponent<DisplayCharacter>().StartShowCharacterNoti(1, emoCrash);
           uiManager.DisplayCharacterStatus((int)action.team * 3 + (int)action.role, "Crashed");
@@ -176,16 +193,13 @@ public class DisplayRecordManager : MonoBehaviour
           if (playRecordState == PlayRecordState.Playing)
           {
             var direction = DirectionStringExtension.ToDirectionVector(action.direction);
-            if (IsValidDirection(currentCharacter.x, currentCharacter.y, (int)direction.X, (int)direction.Y))
+            var serverCharacters = gameRecordData.log[currentTurn].serverGameState.characters;
+            if (IsValidDirection(currentCharacter.x, currentCharacter.y, (int)direction.X, (int)direction.Y) && !serverCharacters.GetItem(action.team, action.role).cancelAction)
             {
               ChangeFacingDirection(characterGO, currentCharacter.team, direction);
               characterGO.transform
                 .DOMove(cellGOs[currentCharacter.x + (int)direction.X][currentCharacter.y + (int)direction.Y].transform.position, turnTime)
-                .SetEase(Ease.InOutQuad)
-                .OnComplete(() =>
-                {
-                  //TODO: Show dead animation if dead
-                });
+                .SetEase(Ease.InOutQuad);
               characterGO.transform
                 .DOScaleY(characterGO.transform.localScale.y - 0.02f, turnTime / 4)
                 .SetLoops(4, LoopType.Yoyo)
@@ -207,30 +221,29 @@ public class DisplayRecordManager : MonoBehaviour
 
   void CheckCharacterWithServer()
   {
-    for (int team = 0; team < 2; team++)
+    foreach (var team in gameRecordData.gameConfig.availableTeams)
     {
-      for (int i = 0; i < 3; i++)
+      foreach (var role in gameRecordData.gameConfig.availableRoles)
       {
-        var character = characters.GetItem((Team)team, (CharacterRole)i);
-        var characterGO = characterGOs.GetItem((Team)team, (CharacterRole)i);
-        if (character.isScared)
-        {
-          characterGO.GetComponent<DisplayCharacter>().StartShowCharacterNoti(1, emoFear);
-        }
-
-        if (i == 2 && characterGO.transform.position == characterGOs.GetItem((Team)(1 - team), CharacterRole.Planter).transform.position)
+        var characterGO = characterGOs.GetItem(team, role);
+        if (role == CharacterRole.Worm && characterGO.transform.position == characterGOs.GetItem((Team)(1 - team), CharacterRole.Planter).transform.position)
         {
           characterGO.GetComponent<DisplayCharacter>().StartShowCharacterNoti(1, emoDie);
         }
       }
     }
 
-    for (int team = 0; team < 2; team++)
+    characters = gameRecordData.log[currentTurn].serverGameState.characters;
+    foreach (var team in gameRecordData.gameConfig.availableTeams)
     {
-      for (int i = 0; i < 3; i++)
+      foreach (var role in gameRecordData.gameConfig.availableRoles)
       {
-        characters = gameRecordData.log[currentTurn].serverGameState.characters;
-        var currentCharacter = characters.GetItem((Team)team, (CharacterRole)i);
+        var currentCharacter = characters.GetItem(team, role);
+        if (currentCharacter.isScared)
+        {
+          var characterGO = characterGOs.GetItem(team, role);
+          characterGO.GetComponent<DisplayCharacter>().StartShowCharacterNoti(1, emoFear);
+        }
         characterGOs.GetItem(currentCharacter.team, currentCharacter.characterRole).transform.position = cellGOs[currentCharacter.x][currentCharacter.y].transform.position;
       }
     }
@@ -307,20 +320,18 @@ public class DisplayRecordManager : MonoBehaviour
     Destroy(cellObject);
   }
 
-  void InitCharacter()
+  void InitCharacter(GameConfig gameRule)
   {
-    for (int team = 0; team < 2; team++)
+    foreach (var team in gameRule.availableTeams)
     {
-      var newDictionary = new Dictionary<CharacterRole, GameObject>();
-      for (int i = 0; i < 3; i++)
+      foreach (var role in gameRule.availableRoles)
       {
-        var characterInfo = gameRecordData.log[currentTurn].serverGameState.characters.GetItem((Team)team, (CharacterRole)i);
+        var characterInfo = gameRecordData.log[currentTurn].serverGameState.characters.GetItem(team, role);
         var cell = cellGOs[characterInfo.x][characterInfo.y];
-        GameObject characterGO = Instantiate(GetPrefabByRole((Team)team, (CharacterRole)i), cell.transform.position, Quaternion.identity, gridTransform);
+        GameObject characterGO = Instantiate(GetPrefabByRole(team, role), cell.transform.position, Quaternion.identity, gridTransform);
         var characterSprite = characterGO.GetComponent<SpriteRenderer>().sprite;
         characterGO.transform.localScale = new Vector2(newCellSize.x / characterSprite.bounds.size.x, newCellSize.y / characterSprite.bounds.size.y);
         characterGO.GetComponent<DisplayCharacter>().characterNoti.SetActive(false);
-        newDictionary.Add((CharacterRole)i, characterGO);
         characterGOs.SetItem(characterInfo.team, characterInfo.characterRole, characterGO);
       }
     }
@@ -381,9 +392,9 @@ public class DisplayRecordManager : MonoBehaviour
   }
 
   //---------------------------------------------Play Scene UI Actions --------------------------------------------------
-  private void PlayButtonClick()
+  private void PlayButtonClick(bool isContinue)
   {
-    StartCoroutine(PlayLogs(true));
+    StartCoroutine(PlayLogs(isContinue));
   }
 
   private void StopPlayRecord()

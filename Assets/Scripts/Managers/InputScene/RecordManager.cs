@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -21,7 +22,6 @@ public class RecordManager : MonoBehaviour, IReplayRecorder
   public void LogGameStart(GameConfig gameRule, ServerGameState serverGameState)
   {
     this.gameConfig = gameRule;
-
     RecordModel recordModel = new RecordModel();
     recordModel.serverGameState = JsonConvert.DeserializeObject<ServerGameState>(JsonConvert.SerializeObject(serverGameState));
     recordModel.serverGameState.turn = 0;
@@ -49,7 +49,6 @@ public class RecordManager : MonoBehaviour, IReplayRecorder
     var gameRecord = new GameRecordLogData();
     gameRecord.gameConfig = gameConfig;
     gameRecord.log = log;
-
     string json = JsonConvert.SerializeObject(gameRecord, Formatting.Indented);
     File.WriteAllText($"{jsonFilePath}/{fileName}", json);
     PlayerPrefs.SetString("LogPath", $"{jsonFilePath}/{fileName}");

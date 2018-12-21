@@ -19,7 +19,7 @@ public class GrpcInputManager : MonoBehaviour
   private ErrorRecorder errorRecorder;
   //characters
   TeamRoleMap<ICharacterController> characters = new TeamRoleMap<ICharacterController>();
-  private bool[] isBot;
+  TeamRoleMap<bool> isBot = new TeamRoleMap<bool>();
 
   //client
   [SerializeField] private string serverIP;
@@ -28,53 +28,56 @@ public class GrpcInputManager : MonoBehaviour
   private Process pythonProcess;
   private CancellationTokenSource tokenSource;
   private CancellationToken cancellationToken;
+  private GameConfig gameRule;
 
   //map
   private int currentMap = 0;
 
   void Awake()
   {
-    isBot = new bool[6];
-    for (int i = 0; i < 6; i++)
-    {
-      isBot[i] = true;
-    }
     uiManager.ChangeMap = ChangeMap;
     uiManager.SetIsBot = SetIsBot;
     uiManager.StartGame = StartGame;
+
+    gameRule = GameConfig.DefaultGameRule();
+    foreach (var team in gameRule.availableTeams)
+    {
+      foreach (var role in gameRule.availableRoles)
+      {
+        isBot.SetItem(team, role, true);
+      }
+    }
   }
 
   private void SetIsBot(int index)
   {
-    isBot[index] = false;
+    int team = (int)(index / gameRule.availableRoles.Count);
+    int role = index % gameRule.availableRoles.Count;
+    isBot.SetItem((Team)team, (CharacterRole)role, false);
   }
 
   //-------------------------------------------- Read Python -------------------------------------------------
   public TeamRoleMap<ICharacterController> InitCharacter(MapInfo mapInfo, GameConfig gameRule, ErrorRecorder errorRecorder)
   {
     var controllers = new TeamRoleMap<ICharacterController>();
-    int botIndex = 0; // TODO change bot to use the same configurable system as controllers
     foreach (var team in gameRule.availableTeams)
     {
       foreach (var role in gameRule.availableRoles)
       {
-        if (!isBot[botIndex])
+        if (!isBot.GetItem(team, role))
         {
           PythonCharacter character = new PythonCharacter(channel);
           character.CancelStartGameTask = StopRecordGameWhenError;
-
+          character.errorRecorder = errorRecorder;
           controllers.SetItem(team, role, character);
         }
         else
         {
-          BotCharacter character = new BotCharacter();
+          BotCharacter character = new BotCharacter(role);
           character.uiManager = this.uiManager;
           character.mapInfo = mapInfo;
-
           controllers.SetItem(team, role, character);
         }
-
-        botIndex++;
       }
     }
 
@@ -83,18 +86,24 @@ public class GrpcInputManager : MonoBehaviour
 
   private bool isHavingBot()
   {
-    for (int i = 0; i < isBot.Length; i++)
+    foreach (var team in gameRule.availableTeams)
     {
-      if (isBot[i]) return true;
+      foreach (var role in gameRule.availableRoles)
+      {
+        if (isBot.GetItem(team, role)) return true;
+      }
     }
     return false;
   }
 
   private bool NeedStartServer()
   {
-    for (int i = 0; i < isBot.Length; i++)
+    foreach (var team in gameRule.availableTeams)
     {
-      if (!isBot[i]) return true;
+      foreach (var role in gameRule.availableRoles)
+      {
+        if (!isBot.GetItem(team, role)) return true;
+      }
     }
     return false;
   }
@@ -114,6 +123,7 @@ public class GrpcInputManager : MonoBehaviour
       {
         var serverPath = $"{Application.streamingAssetsPath}/ai_server.py";
         pythonProcess = new Process();
+        pythonProcess.StartInfo.CreateNoWindow= true;
         pythonProcess.StartInfo.FileName = pythonPath;
         pythonProcess.StartInfo.Arguments = serverPath;
         pythonProcess.StartInfo.RedirectStandardOutput = true;
@@ -166,13 +176,13 @@ public class GrpcInputManager : MonoBehaviour
   private string ShowBot()
   {
     string currentBots = "Following characters are controlled by bot:";
-    for (int team = 0; team < 2; team++)
+    foreach (var team in gameRule.availableTeams)
     {
-      for (int i = 0; i < 3; i++)
+      foreach (var role in gameRule.availableRoles)
       {
-        if (isBot[team * 3 + i])
+        if (isBot.GetItem(team, role))
         {
-          currentBots += $"\nTeam: {(Team)team} - Character: {(CharacterRole)i}";
+          currentBots += $"\nTeam: {team} - Character: {role}";
         }
       }
     }
@@ -192,14 +202,14 @@ public class GrpcInputManager : MonoBehaviour
 
   async void StartRecordGame(CancellationToken token)
   {
-    GameConfig gameRule = GameConfig.DefaultGameRule();
     errorRecorder = new ErrorRecorder();
 
     var mapInfo = mapModel.listMap[currentMap].mapDisplayData.ToMapInfo(gameRule);
     var gameLogic = GameLogic.GameLogicForPlay(gameRule, mapInfo);
     var recordManager = gameObject.AddComponent<RecordManager>();
+    recordManager.errorRecorder = this.errorRecorder;
+    recordManager.uiManager = this.uiManager;
 
-    // TODO record game rule
     characters = InitCharacter(mapInfo, gameRule, errorRecorder);
     gameLogic.InitializeGame(characters);
 
@@ -210,6 +220,7 @@ public class GrpcInputManager : MonoBehaviour
 
     await task;
 
+    KillProcess();
     if (task.IsFaulted)
     {
       errorRecorder.RecordErrorMessage($"Start game fail! Error message: {task.Exception}", true);
@@ -229,11 +240,14 @@ public class GrpcInputManager : MonoBehaviour
     }
   }
 
+  private void KillProcess()
+  {
+    pythonProcess.Kill();
+    pythonProcess.Dispose();
+  }
   IEnumerator ShowLogPathNoti()
   {
     uiManager.ShowNotiPanel($"Log file is saved to following path: {PlayerPrefs.GetString("LogPath")}", 4, 1);
-    pythonProcess.Kill();
-    pythonProcess.Dispose();
     yield return new WaitForSeconds(4);
     uiManager.StartLoadingPlayScene();
   }

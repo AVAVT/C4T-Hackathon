@@ -2,33 +2,28 @@ using System;
 using System.Numerics;
 
 [System.Serializable]
-public struct Character
+public class Character
 {
   public int x;
   public int y;
   public Team team;
   public CharacterRole characterRole;
-  public int fruitCarrying;
   public bool isScared;
+  public bool cancelAction;
+  public int fruitCarrying;
+  public int numTreePlanted, numWormCaught, numFruitHarvested, numFruitDelivered, numTreeDestroyed, numHarvesterScared;
 
-  public int numTreePlanted;
-  public int numWormCaught;
-  public int numFruitHarvested;
-  public int numFruitDelivered;
-  public int numTreeDestroyed;
-  public int numHarvesterScared;
-
+  //TODO: Sub-class
   public Character(int x, int y, Team team, CharacterRole characterRole)
   {
     this.characterRole = characterRole;
     this.x = x;
     this.y = y;
     this.team = team;
-    this.fruitCarrying = 0;
     this.isScared = false;
+    this.cancelAction = false;
 
-    // TODO subclass to record only role-specific action
-    numTreePlanted = numWormCaught = numFruitHarvested = numFruitDelivered = numTreeDestroyed = numHarvesterScared = 0;
+    fruitCarrying = numTreePlanted = numWormCaught = numFruitHarvested = numFruitDelivered = numTreeDestroyed = numHarvesterScared;
   }
 
   public int DistanceTo(Character character)
