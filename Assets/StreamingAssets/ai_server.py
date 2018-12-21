@@ -26,29 +26,29 @@ class AIServiceServicer(AI_Action_pb2_grpc.AIServiceServicer):
   def ReturnAIResponse(self, request, context):
     """Get map info then return AI response
     """
-    jsonObject = j.loads(request.json)
-    if jsonObject['turn'] == 0:
-      action = self.call_character_dostart(request.index, request.json)
+    serverGameStateJson = j.loads(request.serverGameState)
+    if serverGameStateJson['turn'] == 0:
+      action = self.call_character_dostart(request.index, request.gameRule, request.serverGameState)
     else:
-      action = self.call_character_doturn(request.index, request.json)
+      action = self.call_character_doturn(request.index, request.serverGameState)
     return AI_Action_pb2.AIResponse(action=action)
   
-  def call_character_dostart(self, index, json):
-    if index==0: return self.rp.do_start(json)
-    elif index==1: return self.rh.do_start(json)
-    elif index==2: return self.rw.do_start(json)
-    elif index==3: return self.bp.do_start(json)
-    elif index==4: return self.bh.do_start(json)
-    elif index==5: return self.bw.do_start(json)
+  def call_character_dostart(self, index, gameRule, serverGameState):
+    if index==0: return self.rp.do_start(gameRule, serverGameState)
+    elif index==1: return self.rh.do_start(gameRule, serverGameState)
+    elif index==2: return self.rw.do_start(gameRule, serverGameState)
+    elif index==3: return self.bp.do_start(gameRule, serverGameState)
+    elif index==4: return self.bh.do_start(gameRule, serverGameState)
+    elif index==5: return self.bw.do_start(gameRule, serverGameState)
     else: raise Exception("Invalid character index!")
   
-  def call_character_doturn(self, index, json):
-    if index==0: return self.rp.do_turn(json)
-    elif index==1: return self.rh.do_turn(json)
-    elif index==2: return self.rw.do_turn(json)
-    elif index==3: return self.bp.do_turn(json)
-    elif index==4: return self.bh.do_turn(json)
-    elif index==5: return self.bw.do_turn(json)
+  def call_character_doturn(self, index, serverGameState):
+    if index==0: return self.rp.do_turn(serverGameState)
+    elif index==1: return self.rh.do_turn(serverGameState)
+    elif index==2: return self.rw.do_turn(serverGameState)
+    elif index==3: return self.bp.do_turn(serverGameState)
+    elif index==4: return self.bh.do_turn(serverGameState)
+    elif index==5: return self.bw.do_turn(serverGameState)
     else: raise Exception("Invalid character index!")
 
   def ShutdownServer(self, request, context):

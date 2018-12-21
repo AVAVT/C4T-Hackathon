@@ -1,0 +1,2 @@
+c# %UserProfile%\.nuget\packages\grpc.tools\1.16.0\tools\windows_x86\protoc.exe -I Assets/Scripts/Protos --csharp_out Assets/Scripts/RPC --grpc_out Assets/Scripts/RPC Assets/Scripts/Protos/helloworld.proto --plugin=protoc-gen-grpc=%UserProfile%\.nuget\packages\grpc.tools\1.16.0\tools\windows_x86\grpc_csharp_plugin.exe
+python C:\Users\espec\Desktop\grpc-unity-package-master\example\UnityGrpcClient\Assets\Scripts>python -m grpc_tools.protoc -IProtos --python_out=RPC --grpc_python_out=RPC Protos/helloworld.proto

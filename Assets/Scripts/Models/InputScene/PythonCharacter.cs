@@ -57,7 +57,9 @@ public class PythonCharacter : ICharacterController, IRuntimeCharacter
       ct.Token.Register(() => tcs.TrySetCanceled(), useSynchronizationContext: false);
 
       string json = JsonConvert.SerializeObject(gameState);
-      await Task<string>.Factory.StartNew(() => GetAIResponse(json), ct.Token).ContinueWith((task) =>
+      string gameRuleJson = JsonConvert.SerializeObject(gameRule);
+
+      await Task<string>.Factory.StartNew(() => GetAIResponse(json, gameRuleJson), ct.Token).ContinueWith((task) =>
       {
         if (task.IsFaulted)
         {
@@ -112,11 +114,11 @@ public class PythonCharacter : ICharacterController, IRuntimeCharacter
     return result;
   }
 
-  private string GetAIResponse(string json)
+  private string GetAIResponse(string json, string gameRule = "")
   {
     try
     {
-      AIResponse reply = client.ReturnAIResponse(new AIRequest { Index = (int)Character.team * 3 + (int)Character.characterRole, Json = json });
+      AIResponse reply = client.ReturnAIResponse(new AIRequest { Index = (int)Character.team * 3 + (int)Character.characterRole, GameRule = gameRule, ServerGameState = json});
       return reply.Action;
     }
     catch (System.Exception ex)

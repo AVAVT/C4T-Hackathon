@@ -213,7 +213,6 @@ public class GameLogic
         var wormNewPosition = mapInfo.startingPositions.GetItem(worm.team, worm.characterRole);
         newWormState.x = (int)wormNewPosition.X;
         newWormState.y = (int)wormNewPosition.Y;
-        UnityEngine.Debug.Log("Turn" +serverGameState.turn + " - "+ wormNewPosition.X + " - "+wormNewPosition.Y);
         serverGameState.characters.SetItem(worm.team, worm.characterRole, newWormState);
 
         newPlanterState.numWormCaught++;

@@ -2,6 +2,7 @@ import json as j
 class Character:
     def __init__(self):
         #Change this to 0: Grower, 1: Harvester, 2: Worm
+        self.gameRule = None
         self.characterRole = 0
         self.x = None
         self.y = None
@@ -10,9 +11,10 @@ class Character:
         self.isScared = False
         self.cancelAction = False
 
-    def do_start(self, json):
+    def do_start(self, gameRule, json):
         #method for preparing
         game_state = j.loads(json)
+        self.gameRule = j.loads(gameRule)
         self.team = game_state['allies'][self.characterRole]['team']
         return "READY"
 

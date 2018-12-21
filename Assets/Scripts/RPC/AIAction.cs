@@ -22,19 +22,16 @@ public static partial class AIActionReflection {
   static AIActionReflection() {
     byte[] descriptorData = global::System.Convert.FromBase64String(
         string.Concat(
-          "Cg9BSV9BY3Rpb24ucHJvdG8iKAoJQUlSZXF1ZXN0Eg0KBWluZGV4GAEgASgF",
-          "EgwKBGpzb24YAiABKAkiHAoKQUlSZXNwb25zZRIOCgZhY3Rpb24YASABKAki",
-          "EQoPU2h1dGRvd25SZXF1ZXN0IiIKEFNodXRkb3duUmVzcG9uc2USDgoGc3Rh",
-          "dHVzGAEgASgJMnMKCUFJU2VydmljZRItChBSZXR1cm5BSVJlc3BvbnNlEgou",
-          "QUlSZXF1ZXN0GgsuQUlSZXNwb25zZSIAEjcKDlNodXRkb3duU2VydmVyEhAu",
-          "U2h1dGRvd25SZXF1ZXN0GhEuU2h1dGRvd25SZXNwb25zZSIAYgZwcm90bzM="));
+          "Cg9BSV9BY3Rpb24ucHJvdG8iRQoJQUlSZXF1ZXN0Eg0KBWluZGV4GAEgASgF",
+          "EhAKCGdhbWVSdWxlGAIgASgJEhcKD3NlcnZlckdhbWVTdGF0ZRgDIAEoCSIc",
+          "CgpBSVJlc3BvbnNlEg4KBmFjdGlvbhgBIAEoCTI6CglBSVNlcnZpY2USLQoQ",
+          "UmV0dXJuQUlSZXNwb25zZRIKLkFJUmVxdWVzdBoLLkFJUmVzcG9uc2UiAGIG",
+          "cHJvdG8z"));
     descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
         new pbr::FileDescriptor[] { },
         new pbr::GeneratedClrTypeInfo(null, new pbr::GeneratedClrTypeInfo[] {
-          new pbr::GeneratedClrTypeInfo(typeof(global::AIRequest), global::AIRequest.Parser, new[]{ "Index", "Json" }, null, null, null),
-          new pbr::GeneratedClrTypeInfo(typeof(global::AIResponse), global::AIResponse.Parser, new[]{ "Action" }, null, null, null),
-          new pbr::GeneratedClrTypeInfo(typeof(global::ShutdownRequest), global::ShutdownRequest.Parser, null, null, null, null),
-          new pbr::GeneratedClrTypeInfo(typeof(global::ShutdownResponse), global::ShutdownResponse.Parser, new[]{ "Status" }, null, null, null)
+          new pbr::GeneratedClrTypeInfo(typeof(global::AIRequest), global::AIRequest.Parser, new[]{ "Index", "GameRule", "ServerGameState" }, null, null, null),
+          new pbr::GeneratedClrTypeInfo(typeof(global::AIResponse), global::AIResponse.Parser, new[]{ "Action" }, null, null, null)
         }));
   }
   #endregion
@@ -70,7 +67,8 @@ public sealed partial class AIRequest : pb::IMessage<AIRequest> {
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
   public AIRequest(AIRequest other) : this() {
     index_ = other.index_;
-    json_ = other.json_;
+    gameRule_ = other.gameRule_;
+    serverGameState_ = other.serverGameState_;
     _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
   }
 
@@ -90,14 +88,25 @@ public sealed partial class AIRequest : pb::IMessage<AIRequest> {
     }
   }
 
-  /// <summary>Field number for the "json" field.</summary>
-  public const int JsonFieldNumber = 2;
-  private string json_ = "";
+  /// <summary>Field number for the "gameRule" field.</summary>
+  public const int GameRuleFieldNumber = 2;
+  private string gameRule_ = "";
   [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public string Json {
-    get { return json_; }
+  public string GameRule {
+    get { return gameRule_; }
     set {
-      json_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      gameRule_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+    }
+  }
+
+  /// <summary>Field number for the "serverGameState" field.</summary>
+  public const int ServerGameStateFieldNumber = 3;
+  private string serverGameState_ = "";
+  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+  public string ServerGameState {
+    get { return serverGameState_; }
+    set {
+      serverGameState_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
     }
   }
 
@@ -115,7 +124,8 @@ public sealed partial class AIRequest : pb::IMessage<AIRequest> {
       return true;
     }
     if (Index != other.Index) return false;
-    if (Json != other.Json) return false;
+    if (GameRule != other.GameRule) return false;
+    if (ServerGameState != other.ServerGameState) return false;
     return Equals(_unknownFields, other._unknownFields);
   }
 
@@ -123,7 +133,8 @@ public sealed partial class AIRequest : pb::IMessage<AIRequest> {
   public override int GetHashCode() {
     int hash = 1;
     if (Index != 0) hash ^= Index.GetHashCode();
-    if (Json.Length != 0) hash ^= Json.GetHashCode();
+    if (GameRule.Length != 0) hash ^= GameRule.GetHashCode();
+    if (ServerGameState.Length != 0) hash ^= ServerGameState.GetHashCode();
     if (_unknownFields != null) {
       hash ^= _unknownFields.GetHashCode();
     }
@@ -141,9 +152,13 @@ public sealed partial class AIRequest : pb::IMessage<AIRequest> {
       output.WriteRawTag(8);
       output.WriteInt32(Index);
     }
-    if (Json.Length != 0) {
+    if (GameRule.Length != 0) {
       output.WriteRawTag(18);
-      output.WriteString(Json);
+      output.WriteString(GameRule);
+    }
+    if (ServerGameState.Length != 0) {
+      output.WriteRawTag(26);
+      output.WriteString(ServerGameState);
     }
     if (_unknownFields != null) {
       _unknownFields.WriteTo(output);
@@ -156,8 +171,11 @@ public sealed partial class AIRequest : pb::IMessage<AIRequest> {
     if (Index != 0) {
       size += 1 + pb::CodedOutputStream.ComputeInt32Size(Index);
     }
-    if (Json.Length != 0) {
-      size += 1 + pb::CodedOutputStream.ComputeStringSize(Json);
+    if (GameRule.Length != 0) {
+      size += 1 + pb::CodedOutputStream.ComputeStringSize(GameRule);
+    }
+    if (ServerGameState.Length != 0) {
+      size += 1 + pb::CodedOutputStream.ComputeStringSize(ServerGameState);
     }
     if (_unknownFields != null) {
       size += _unknownFields.CalculateSize();
@@ -173,8 +191,11 @@ public sealed partial class AIRequest : pb::IMessage<AIRequest> {
     if (other.Index != 0) {
       Index = other.Index;
     }
-    if (other.Json.Length != 0) {
-      Json = other.Json;
+    if (other.GameRule.Length != 0) {
+      GameRule = other.GameRule;
+    }
+    if (other.ServerGameState.Length != 0) {
+      ServerGameState = other.ServerGameState;
     }
     _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
   }
@@ -192,7 +213,11 @@ public sealed partial class AIRequest : pb::IMessage<AIRequest> {
           break;
         }
         case 18: {
-          Json = input.ReadString();
+          GameRule = input.ReadString();
+          break;
+        }
+        case 26: {
+          ServerGameState = input.ReadString();
           break;
         }
       }
@@ -325,242 +350,6 @@ public sealed partial class AIResponse : pb::IMessage<AIResponse> {
           break;
         case 10: {
           Action = input.ReadString();
-          break;
-        }
-      }
-    }
-  }
-
-}
-
-/// <summary>
-/// The request message to shutdown server
-/// </summary>
-public sealed partial class ShutdownRequest : pb::IMessage<ShutdownRequest> {
-  private static readonly pb::MessageParser<ShutdownRequest> _parser = new pb::MessageParser<ShutdownRequest>(() => new ShutdownRequest());
-  private pb::UnknownFieldSet _unknownFields;
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public static pb::MessageParser<ShutdownRequest> Parser { get { return _parser; } }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public static pbr::MessageDescriptor Descriptor {
-    get { return global::AIActionReflection.Descriptor.MessageTypes[2]; }
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  pbr::MessageDescriptor pb::IMessage.Descriptor {
-    get { return Descriptor; }
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public ShutdownRequest() {
-    OnConstruction();
-  }
-
-  partial void OnConstruction();
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public ShutdownRequest(ShutdownRequest other) : this() {
-    _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public ShutdownRequest Clone() {
-    return new ShutdownRequest(this);
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public override bool Equals(object other) {
-    return Equals(other as ShutdownRequest);
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public bool Equals(ShutdownRequest other) {
-    if (ReferenceEquals(other, null)) {
-      return false;
-    }
-    if (ReferenceEquals(other, this)) {
-      return true;
-    }
-    return Equals(_unknownFields, other._unknownFields);
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public override int GetHashCode() {
-    int hash = 1;
-    if (_unknownFields != null) {
-      hash ^= _unknownFields.GetHashCode();
-    }
-    return hash;
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public override string ToString() {
-    return pb::JsonFormatter.ToDiagnosticString(this);
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public void WriteTo(pb::CodedOutputStream output) {
-    if (_unknownFields != null) {
-      _unknownFields.WriteTo(output);
-    }
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public int CalculateSize() {
-    int size = 0;
-    if (_unknownFields != null) {
-      size += _unknownFields.CalculateSize();
-    }
-    return size;
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public void MergeFrom(ShutdownRequest other) {
-    if (other == null) {
-      return;
-    }
-    _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public void MergeFrom(pb::CodedInputStream input) {
-    uint tag;
-    while ((tag = input.ReadTag()) != 0) {
-      switch(tag) {
-        default:
-          _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
-          break;
-      }
-    }
-  }
-
-}
-
-/// <summary>
-/// The response message containing server's status
-/// </summary>
-public sealed partial class ShutdownResponse : pb::IMessage<ShutdownResponse> {
-  private static readonly pb::MessageParser<ShutdownResponse> _parser = new pb::MessageParser<ShutdownResponse>(() => new ShutdownResponse());
-  private pb::UnknownFieldSet _unknownFields;
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public static pb::MessageParser<ShutdownResponse> Parser { get { return _parser; } }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public static pbr::MessageDescriptor Descriptor {
-    get { return global::AIActionReflection.Descriptor.MessageTypes[3]; }
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  pbr::MessageDescriptor pb::IMessage.Descriptor {
-    get { return Descriptor; }
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public ShutdownResponse() {
-    OnConstruction();
-  }
-
-  partial void OnConstruction();
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public ShutdownResponse(ShutdownResponse other) : this() {
-    status_ = other.status_;
-    _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public ShutdownResponse Clone() {
-    return new ShutdownResponse(this);
-  }
-
-  /// <summary>Field number for the "status" field.</summary>
-  public const int StatusFieldNumber = 1;
-  private string status_ = "";
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public string Status {
-    get { return status_; }
-    set {
-      status_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
-    }
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public override bool Equals(object other) {
-    return Equals(other as ShutdownResponse);
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public bool Equals(ShutdownResponse other) {
-    if (ReferenceEquals(other, null)) {
-      return false;
-    }
-    if (ReferenceEquals(other, this)) {
-      return true;
-    }
-    if (Status != other.Status) return false;
-    return Equals(_unknownFields, other._unknownFields);
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public override int GetHashCode() {
-    int hash = 1;
-    if (Status.Length != 0) hash ^= Status.GetHashCode();
-    if (_unknownFields != null) {
-      hash ^= _unknownFields.GetHashCode();
-    }
-    return hash;
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public override string ToString() {
-    return pb::JsonFormatter.ToDiagnosticString(this);
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public void WriteTo(pb::CodedOutputStream output) {
-    if (Status.Length != 0) {
-      output.WriteRawTag(10);
-      output.WriteString(Status);
-    }
-    if (_unknownFields != null) {
-      _unknownFields.WriteTo(output);
-    }
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public int CalculateSize() {
-    int size = 0;
-    if (Status.Length != 0) {
-      size += 1 + pb::CodedOutputStream.ComputeStringSize(Status);
-    }
-    if (_unknownFields != null) {
-      size += _unknownFields.CalculateSize();
-    }
-    return size;
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public void MergeFrom(ShutdownResponse other) {
-    if (other == null) {
-      return;
-    }
-    if (other.Status.Length != 0) {
-      Status = other.Status;
-    }
-    _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
-  }
-
-  [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
-  public void MergeFrom(pb::CodedInputStream input) {
-    uint tag;
-    while ((tag = input.ReadTag()) != 0) {
-      switch(tag) {
-        default:
-          _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
-          break;
-        case 10: {
-          Status = input.ReadString();
           break;
         }
       }

@@ -3,19 +3,16 @@ syntax = "proto3";
 service AIService {
   // Get map info then return AI response
   rpc ReturnAIResponse (AIRequest) returns (AIResponse) {}
-
-  // Request server to shutdown
-  rpc ShutdownServer (ShutdownRequest) returns (ShutdownResponse){}
 }
 
 // The request message containing map info
 message AIRequest {
   int32 index = 1;
-  string json = 2;
+  string gameRule = 2;
+  string serverGameState = 3;
 }
 
 // The response message containing AI action
 message AIResponse {
   string action = 1;
-}
 }

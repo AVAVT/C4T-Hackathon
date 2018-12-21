@@ -13,8 +13,6 @@ public static partial class AIService
 
   static readonly grpc::Marshaller<global::AIRequest> __Marshaller_AIRequest = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AIRequest.Parser.ParseFrom);
   static readonly grpc::Marshaller<global::AIResponse> __Marshaller_AIResponse = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::AIResponse.Parser.ParseFrom);
-  static readonly grpc::Marshaller<global::ShutdownRequest> __Marshaller_ShutdownRequest = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::ShutdownRequest.Parser.ParseFrom);
-  static readonly grpc::Marshaller<global::ShutdownResponse> __Marshaller_ShutdownResponse = grpc::Marshallers.Create((arg) => global::Google.Protobuf.MessageExtensions.ToByteArray(arg), global::ShutdownResponse.Parser.ParseFrom);
 
   static readonly grpc::Method<global::AIRequest, global::AIResponse> __Method_ReturnAIResponse = new grpc::Method<global::AIRequest, global::AIResponse>(
       grpc::MethodType.Unary,
@@ -22,13 +20,6 @@ public static partial class AIService
       "ReturnAIResponse",
       __Marshaller_AIRequest,
       __Marshaller_AIResponse);
-
-  static readonly grpc::Method<global::ShutdownRequest, global::ShutdownResponse> __Method_ShutdownServer = new grpc::Method<global::ShutdownRequest, global::ShutdownResponse>(
-      grpc::MethodType.Unary,
-      __ServiceName,
-      "ShutdownServer",
-      __Marshaller_ShutdownRequest,
-      __Marshaller_ShutdownResponse);
 
   /// <summary>Service descriptor</summary>
   public static global::Google.Protobuf.Reflection.ServiceDescriptor Descriptor
@@ -46,17 +37,6 @@ public static partial class AIService
     /// <param name="context">The context of the server-side call handler being invoked.</param>
     /// <returns>The response to send back to the client (wrapped by a task).</returns>
     public virtual global::System.Threading.Tasks.Task<global::AIResponse> ReturnAIResponse(global::AIRequest request, grpc::ServerCallContext context)
-    {
-      throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
-    }
-
-    /// <summary>
-    /// Request server to shutdown
-    /// </summary>
-    /// <param name="request">The request received from the client.</param>
-    /// <param name="context">The context of the server-side call handler being invoked.</param>
-    /// <returns>The response to send back to the client (wrapped by a task).</returns>
-    public virtual global::System.Threading.Tasks.Task<global::ShutdownResponse> ShutdownServer(global::ShutdownRequest request, grpc::ServerCallContext context)
     {
       throw new grpc::RpcException(new grpc::Status(grpc::StatusCode.Unimplemented, ""));
     }
@@ -130,50 +110,6 @@ public static partial class AIService
     {
       return CallInvoker.AsyncUnaryCall(__Method_ReturnAIResponse, null, options, request);
     }
-    /// <summary>
-    /// Request server to shutdown
-    /// </summary>
-    /// <param name="request">The request to send to the server.</param>
-    /// <param name="headers">The initial metadata to send with the call. This parameter is optional.</param>
-    /// <param name="deadline">An optional deadline for the call. The call will be cancelled if deadline is hit.</param>
-    /// <param name="cancellationToken">An optional token for canceling the call.</param>
-    /// <returns>The response received from the server.</returns>
-    public virtual global::ShutdownResponse ShutdownServer(global::ShutdownRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
-    {
-      return ShutdownServer(request, new grpc::CallOptions(headers, deadline, cancellationToken));
-    }
-    /// <summary>
-    /// Request server to shutdown
-    /// </summary>
-    /// <param name="request">The request to send to the server.</param>
-    /// <param name="options">The options for the call.</param>
-    /// <returns>The response received from the server.</returns>
-    public virtual global::ShutdownResponse ShutdownServer(global::ShutdownRequest request, grpc::CallOptions options)
-    {
-      return CallInvoker.BlockingUnaryCall(__Method_ShutdownServer, null, options, request);
-    }
-    /// <summary>
-    /// Request server to shutdown
-    /// </summary>
-    /// <param name="request">The request to send to the server.</param>
-    /// <param name="headers">The initial metadata to send with the call. This parameter is optional.</param>
-    /// <param name="deadline">An optional deadline for the call. The call will be cancelled if deadline is hit.</param>
-    /// <param name="cancellationToken">An optional token for canceling the call.</param>
-    /// <returns>The call object.</returns>
-    public virtual grpc::AsyncUnaryCall<global::ShutdownResponse> ShutdownServerAsync(global::ShutdownRequest request, grpc::Metadata headers = null, global::System.DateTime? deadline = null, global::System.Threading.CancellationToken cancellationToken = default(global::System.Threading.CancellationToken))
-    {
-      return ShutdownServerAsync(request, new grpc::CallOptions(headers, deadline, cancellationToken));
-    }
-    /// <summary>
-    /// Request server to shutdown
-    /// </summary>
-    /// <param name="request">The request to send to the server.</param>
-    /// <param name="options">The options for the call.</param>
-    /// <returns>The call object.</returns>
-    public virtual grpc::AsyncUnaryCall<global::ShutdownResponse> ShutdownServerAsync(global::ShutdownRequest request, grpc::CallOptions options)
-    {
-      return CallInvoker.AsyncUnaryCall(__Method_ShutdownServer, null, options, request);
-    }
     /// <summary>Creates a new instance of client from given <c>ClientBaseConfiguration</c>.</summary>
     protected override AIServiceClient NewInstance(ClientBaseConfiguration configuration)
     {
@@ -186,8 +122,7 @@ public static partial class AIService
   public static grpc::ServerServiceDefinition BindService(AIServiceBase serviceImpl)
   {
     return grpc::ServerServiceDefinition.CreateBuilder()
-        .AddMethod(__Method_ReturnAIResponse, serviceImpl.ReturnAIResponse)
-        .AddMethod(__Method_ShutdownServer, serviceImpl.ShutdownServer).Build();
+        .AddMethod(__Method_ReturnAIResponse, serviceImpl.ReturnAIResponse).Build();
   }
 
 }
