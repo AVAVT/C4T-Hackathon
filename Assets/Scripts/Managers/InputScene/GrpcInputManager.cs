@@ -14,8 +14,8 @@ using UnityEngine.UI;
 
 public class GrpcInputManager : MonoBehaviour
 {
-  public static string DATAPATH {get; private set;}
-  public static string PROTOTYPEDATAPATH {get; private set;}
+  public static string DATAPATH { get; private set; }
+  public static string PROTOTYPEDATAPATH { get; private set; }
   public MapModel mapModel;
   public IInputSceneUI uiManager;
   private ErrorRecorder errorRecorder;
@@ -37,14 +37,14 @@ public class GrpcInputManager : MonoBehaviour
 
   void Awake()
   {
+    if (!Directory.Exists($"{Application.persistentDataPath}/PythonData"))
+      Directory.CreateDirectory($"{Application.persistentDataPath}/PythonData");
+
     DATAPATH = $"{Application.persistentDataPath}/PythonData";
     PROTOTYPEDATAPATH = $"{Application.streamingAssetsPath}";
 
-    uiManager.ChangeMap = ChangeMap;
-    uiManager.SetIsBot = SetIsBot;
-    uiManager.StartGame = StartGame;
-
-    if(System.IO.Directory.Exists(DATAPATH)){
+    if (System.IO.Directory.Exists(DATAPATH))
+    {
       Directory.CreateDirectory(DATAPATH);
       CopyAllDirectory(PROTOTYPEDATAPATH, DATAPATH);
     }
@@ -57,6 +57,13 @@ public class GrpcInputManager : MonoBehaviour
         isBot.SetItem(team, role, true);
       }
     }
+  }
+
+  void Start()
+  {
+    uiManager.ChangeMap = ChangeMap;
+    uiManager.SetIsBot = SetIsBot;
+    uiManager.StartGame = StartGame;
   }
 
   private void CopyAllDirectory(string sourceDir, string targetDir)
@@ -260,11 +267,12 @@ public class GrpcInputManager : MonoBehaviour
 
   private void KillProcess()
   {
-    try{
+    try
+    {
       pythonProcess.Kill();
       pythonProcess.Dispose();
     }
-    catch{}
+    catch { }
   }
   IEnumerator ShowLogPathNoti()
   {

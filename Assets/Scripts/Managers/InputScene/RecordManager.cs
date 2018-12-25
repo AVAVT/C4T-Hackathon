@@ -40,6 +40,9 @@ public class RecordManager : MonoBehaviour, IReplayRecorder
   void WriteLogToFile()
   {
     jsonFilePath = PlayerPrefs.GetString("SaveLogPath", $"{GrpcInputManager.DATAPATH}/logs");
+    if (!Directory.Exists(jsonFilePath))
+      Directory.CreateDirectory(jsonFilePath);
+
     var dateString = DateTime.Now;
     var fileName = $"log-{DateTime.Now.Day}{DateTime.Now.Month}{DateTime.Now.Year}-{DateTime.Now.Hour}{DateTime.Now.Minute}{DateTime.Now.Second}.json";
     if (!Directory.Exists(jsonFilePath))

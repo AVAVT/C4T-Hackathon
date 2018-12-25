@@ -136,7 +136,7 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
   //----------------------------------- Interface methods --------------------------------------------
   public void StartLoadingPlayScene()
   {
-    StartCoroutine(loadingPanel.GetComponent<LoadingPanel>().StartLoadingPlayScene());
+    StartCoroutine(loadingPanel.GetComponent<LoadingPanel>().StartLoadingScene("PlayScene"));
   }
 
   public void ShowRecordingProcess(int currentTurn, int gameLength)

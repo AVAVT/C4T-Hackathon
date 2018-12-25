@@ -36,10 +36,10 @@ public class LoadingPanel : MonoBehaviour
     EnableInputPanel?.Invoke();
   }
 
-  public IEnumerator StartLoadingPlayScene()
+  public IEnumerator StartLoadingScene(string sceneName)
   {
     this.gameObject.SetActive(true);
-    var process = SceneManager.LoadSceneAsync("PlayScene");
+    var process = SceneManager.LoadSceneAsync(sceneName);
     while (!process.isDone)
     {
       loadingBar.fillAmount = process.progress;
