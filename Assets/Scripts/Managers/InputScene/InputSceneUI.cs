@@ -1,14 +1,5 @@
 using System;
-using System.Collections;
-using Crosstales.FB;
-using TMPro;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
-using DG.Tweening;
-using System.Diagnostics;
-using System.IO;
-using System.Collections.Generic;
 
 public class InputSceneUI : MonoBehaviour, IInputSceneUI
 {

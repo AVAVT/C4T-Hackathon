@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.Serialization;
 using Newtonsoft.Json;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class RecordManager : MonoBehaviour, IReplayRecorder
 {
