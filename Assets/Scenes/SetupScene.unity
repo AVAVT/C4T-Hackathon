@@ -646,7 +646,7 @@ Prefab:
     - target: {fileID: 114398921435110412, guid: 40b07ba52c42cd542bb8147cbb508274,
         type: 2}
       propertyPath: m_text
-      value: Choose characters' root folder (storing main.py files)
+      value: Choose root folder to store Python Data (and log files)
       objectReference: {fileID: 0}
     - target: {fileID: 114398921435110412, guid: 40b07ba52c42cd542bb8147cbb508274,
         type: 2}
@@ -656,17 +656,17 @@ Prefab:
     - target: {fileID: 114398921435110412, guid: 40b07ba52c42cd542bb8147cbb508274,
         type: 2}
       propertyPath: m_textInfo.characterCount
-      value: 54
+      value: 55
       objectReference: {fileID: 0}
     - target: {fileID: 114398921435110412, guid: 40b07ba52c42cd542bb8147cbb508274,
         type: 2}
       propertyPath: m_textInfo.spaceCount
-      value: 6
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 114398921435110412, guid: 40b07ba52c42cd542bb8147cbb508274,
         type: 2}
       propertyPath: m_textInfo.wordCount
-      value: 8
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 114398921435110412, guid: 40b07ba52c42cd542bb8147cbb508274,
         type: 2}
