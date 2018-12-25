@@ -20,11 +20,12 @@ public class SetupSceneManager : MonoBehaviour
   void Start()
   {
 #if UNITY_EDITOR
-    PlayerPrefs.DeleteKey("HaveConfig");
+    PlayerPrefs.DeleteAll();
 #endif
 
     if (!Directory.Exists($"{Application.persistentDataPath}/PythonData"))
       Directory.CreateDirectory($"{Application.persistentDataPath}/PythonData");
+
     dataPath = $"{Application.persistentDataPath}/PythonData";
     btnSave.interactable = false;
 
@@ -93,7 +94,7 @@ public class SetupSceneManager : MonoBehaviour
     if (!String.IsNullOrEmpty(path))
     {
       rootFolderPathText.text = path;
-      PlayerPrefs.SetString("RootFolder", path);
+      PlayerPrefs.SetString("RootFolderPath", path);
       errorText.text = "Setup root folder successfully!";
       errorText.gameObject.SetActive(true);
       ValidateFields();
@@ -119,6 +120,6 @@ public class SetupSceneManager : MonoBehaviour
   public void OnButtonSaveClick()
   {
     PlayerPrefs.SetInt("HaveConfig", 1);
-		StartCoroutine(loadingPanel.StartLoadingScene("InputScene"));
+    StartCoroutine(loadingPanel.StartLoadingScene("InputScene"));
   }
 }

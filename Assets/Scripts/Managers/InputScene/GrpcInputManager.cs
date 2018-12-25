@@ -37,10 +37,7 @@ public class GrpcInputManager : MonoBehaviour
 
   void Awake()
   {
-    if (!Directory.Exists($"{Application.persistentDataPath}/PythonData"))
-      Directory.CreateDirectory($"{Application.persistentDataPath}/PythonData");
-
-    DATAPATH = $"{Application.persistentDataPath}/PythonData";
+    DATAPATH = PlayerPrefs.GetString("RootFolderPath", $"{Application.persistentDataPath}/PythonData");
     PROTOTYPEDATAPATH = $"{Application.streamingAssetsPath}";
 
     if (System.IO.Directory.Exists(DATAPATH))
@@ -148,6 +145,7 @@ public class GrpcInputManager : MonoBehaviour
       {
         var serverPath = $"{DATAPATH}/ai_server.py";
         pythonProcess = new Process();
+
         // pythonProcess.StartInfo.CreateNoWindow= true;
         pythonProcess.StartInfo.FileName = pythonPath;
         pythonProcess.StartInfo.Arguments = serverPath;
