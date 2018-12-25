@@ -14,6 +14,8 @@ using UnityEngine.UI;
 
 public class GrpcInputManager : MonoBehaviour
 {
+  public static string DATAPATH {get; private set;}
+  public static string PROTOTYPEDATAPATH {get; private set;}
   public MapModel mapModel;
   public IInputSceneUI uiManager;
   private ErrorRecorder errorRecorder;
@@ -35,9 +37,17 @@ public class GrpcInputManager : MonoBehaviour
 
   void Awake()
   {
+    DATAPATH = $"{Application.persistentDataPath}/PythonData";
+    PROTOTYPEDATAPATH = $"{Application.streamingAssetsPath}";
+
     uiManager.ChangeMap = ChangeMap;
     uiManager.SetIsBot = SetIsBot;
     uiManager.StartGame = StartGame;
+
+    if(System.IO.Directory.Exists(DATAPATH)){
+      Directory.CreateDirectory(DATAPATH);
+      CopyAllDirectory(PROTOTYPEDATAPATH, DATAPATH);
+    }
 
     gameRule = GameConfig.DefaultGameRule();
     foreach (var team in gameRule.availableTeams)
@@ -49,11 +59,19 @@ public class GrpcInputManager : MonoBehaviour
     }
   }
 
-  private void SetIsBot(int index)
+  private void CopyAllDirectory(string sourceDir, string targetDir)
+  {
+    foreach (var dir in Directory.GetDirectories(sourceDir, "*", SearchOption.AllDirectories))
+      Directory.CreateDirectory(Path.Combine(targetDir, dir.Substring(sourceDir.Length + 1)));
+    foreach (var fileName in Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories))
+      File.Copy(fileName, Path.Combine(targetDir, fileName.Substring(sourceDir.Length + 1)), true);
+  }
+
+  private void SetIsBot(int index, bool isTrue)
   {
     int team = (int)(index / gameRule.availableRoles.Count);
     int role = index % gameRule.availableRoles.Count;
-    isBot.SetItem((Team)team, (CharacterRole)role, false);
+    isBot.SetItem((Team)team, (CharacterRole)role, isTrue);
   }
 
   //-------------------------------------------- Read Python -------------------------------------------------
@@ -121,7 +139,7 @@ public class GrpcInputManager : MonoBehaviour
       var pythonPath = PlayerPrefs.GetString("PythonPath");
       if (!String.IsNullOrEmpty(pythonPath))
       {
-        var serverPath = $"{Application.streamingAssetsPath}/ai_server.py";
+        var serverPath = $"{DATAPATH}/ai_server.py";
         pythonProcess = new Process();
         // pythonProcess.StartInfo.CreateNoWindow= true;
         pythonProcess.StartInfo.FileName = pythonPath;
@@ -242,8 +260,11 @@ public class GrpcInputManager : MonoBehaviour
 
   private void KillProcess()
   {
-    pythonProcess.Kill();
-    pythonProcess.Dispose();
+    try{
+      pythonProcess.Kill();
+      pythonProcess.Dispose();
+    }
+    catch{}
   }
   IEnumerator ShowLogPathNoti()
   {

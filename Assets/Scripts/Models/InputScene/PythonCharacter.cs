@@ -59,7 +59,7 @@ public class PythonCharacter : ICharacterController, IRuntimeCharacter
       string json = JsonConvert.SerializeObject(gameState);
       string gameRuleJson = JsonConvert.SerializeObject(gameRule);
 
-      await Task<string>.Factory.StartNew(() => GetAIResponse(json, gameRuleJson), ct.Token).ContinueWith((task) =>
+      await GetAIResponse(json, ct, gameRuleJson).ContinueWith((task) =>
       {
         if (task.IsFaulted)
         {
@@ -94,7 +94,7 @@ public class PythonCharacter : ICharacterController, IRuntimeCharacter
 
       string json = JsonConvert.SerializeObject(gameState);
 
-      await Task<string>.Factory.StartNew(() => GetAIResponse(json), ct.Token).ContinueWith((task) =>
+      await GetAIResponse(json, ct).ContinueWith((task) =>
       {
         if (task.IsFaulted && !isValidAction(result))
         {
@@ -114,18 +114,19 @@ public class PythonCharacter : ICharacterController, IRuntimeCharacter
     return result;
   }
 
-  private string GetAIResponse(string json, string gameRule = "")
+  private async Task<string> GetAIResponse(string json, CancellationTokenSource tokenSource, string gameRule = "")
   {
     try
     {
       var index = (int)Character.team * 3 + (int)Character.characterRole;
-      AIResponse reply = client.ReturnAIResponse(new AIRequest { Index = index, GameRule = gameRule, ServerGameState = json});
+      AIResponse reply = await client.ReturnAIResponseAsync(new AIRequest { Index = index, GameRule = gameRule, ServerGameState = json});
       return reply.Action;
     }
     catch (System.Exception ex)
     {
       errorRecorder.RecordErrorMessage($"Get AI Response fail! Fail message: {ex}", true);
       UnityEngine.Debug.LogError($"Fail! Message: {ex}");
+      tokenSource.Cancel();
       cancelStartGameTask?.Invoke();
       return "STAY";
     }

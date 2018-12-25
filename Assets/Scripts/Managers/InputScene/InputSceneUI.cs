@@ -20,14 +20,14 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
   [SerializeField] private LoadingPanel loadingPanel;
   [SerializeField] private NotiPanel notiPanel;
 
-  public Action<int> SetIsBot
+  public Action<int, bool> SetIsBot
   {
     set
     {
       setIsBot = value;
     }
   }
-  private Action<int> setIsBot;
+  private Action<int, bool> setIsBot;
   public Action<bool> ChangeMap
   {
     set
@@ -129,9 +129,9 @@ public class InputSceneUI : MonoBehaviour, IInputSceneUI
     settingPanel.GetComponent<SettingPanel>().ResetSettingPanel();
   }
 
-  private void CallIsSetBot(int index)
+  private void CallIsSetBot(int index, bool isTrue)
   {
-    setIsBot?.Invoke(index);
+    setIsBot?.Invoke(index, isTrue);
   }
   private void CallStartGame()
   {

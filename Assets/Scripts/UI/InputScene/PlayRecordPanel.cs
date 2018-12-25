@@ -11,7 +11,7 @@ public class PlayRecordPanel : MonoBehaviour
   public Action EnableStartPanel {private get; set; }
   private void ChooseRecordBrowser()
   {
-    var path = FileBrowser.OpenSingleFile("Choose log file to play!", Application.streamingAssetsPath + "/logs", "json");
+    var path = FileBrowser.OpenSingleFile("Choose log file to play!", GrpcInputManager.DATAPATH + "/logs", "json");
     if (!String.IsNullOrEmpty(path))
     {
       PlayerPrefs.SetString("LogPath", path);

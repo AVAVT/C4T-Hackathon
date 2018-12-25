@@ -7,10 +7,10 @@ using UnityEngine.UI;
 
 public class InputPanel : MonoBehaviour
 {
-  public Action<string, float, float> ShowNotiPanel{private get; set;}
-  public Action<int> SetIsBot{private get; set;}
-  public Action<bool> ChangeMap{private get; set;}
-  public Action StartGame{private get; set;}
+  public Action<string, float, float> ShowNotiPanel { private get; set; }
+  public Action<int, bool> SetIsBot { private get; set; }
+  public Action<bool> ChangeMap { private get; set; }
+  public Action StartGame { private get; set; }
   public Action EnableLoadingPanel { private get; set; }
   public Action EnableStartPanel { private get; set; }
 
@@ -18,9 +18,8 @@ public class InputPanel : MonoBehaviour
   [Header("Team panel")]
   [SerializeField] private InputField[] characterInputNames;
   [SerializeField] private Image[] characterStatus;
-  [SerializeField] private Image[] characterBrowseButtons;
-  [SerializeField] private Sprite importButtonSprite;
-  [SerializeField] private Sprite changeButtonSprite;
+  [SerializeField] private Button[] characterBrowseButtons;
+  [SerializeField] private Button[] characterRemoveButtons;
   [SerializeField] private Sprite unreadyStatusSprite;
   [SerializeField] private Sprite readyStatusSprite;
 
@@ -28,7 +27,7 @@ public class InputPanel : MonoBehaviour
   [SerializeField] private Image mapPreview;
   [SerializeField] private TMP_Text mapName;
 
-  public void SavePlayerName()
+  private void SavePlayerName()
   {
     for (int i = 0; i < characterInputNames.Length; i++)
     {
@@ -48,7 +47,7 @@ public class InputPanel : MonoBehaviour
     return false;
   }
 
-  public void OpenFileBrowser(int index)
+  private void OpenFileBrowser(int index)
   {
     string path = FileBrowser.OpenSingleFolder("Choose AI folder");
     if (!String.IsNullOrEmpty(path) && isFolderContainPython(path))
@@ -58,12 +57,20 @@ public class InputPanel : MonoBehaviour
       CopyAllDirectory(path, copyPath);
       ShowNotiPanel?.Invoke($"Import folder containing main.py successfully!", 2, 1);
       ShowFileStatus(index);
-      SetIsBot?.Invoke(index);
+      SetIsBot?.Invoke(index, true);
     }
     else
     {
       ShowNotiPanel?.Invoke("Invalid path given or folder does not contain main.py file!", 2, 1);
     }
+  }
+
+  private void RemoveAIDirectory(int index)
+  {
+    characterRemoveButtons[index].gameObject.SetActive(false);
+    characterBrowseButtons[index].gameObject.SetActive(true);
+    characterStatus[index].sprite = unreadyStatusSprite;
+    SetIsBot?.Invoke(index, false);
   }
 
   private void CopyAllDirectory(string sourceDir, string targetDir)
@@ -89,27 +96,27 @@ public class InputPanel : MonoBehaviour
     switch (index)
     {
       case 0:
-        tempPath = $"{Application.streamingAssetsPath}/red_planter";
+        tempPath = $"{GrpcInputManager.DATAPATH}/red_planter";
         Directory.CreateDirectory(tempPath);
         return tempPath;
       case 1:
-        tempPath = $"{Application.streamingAssetsPath}/red_harvester";
+        tempPath = $"{GrpcInputManager.DATAPATH}/red_harvester";
         Directory.CreateDirectory(tempPath);
         return tempPath;
       case 2:
-        tempPath = $"{Application.streamingAssetsPath}/red_worm";
+        tempPath = $"{GrpcInputManager.DATAPATH}/red_worm";
         Directory.CreateDirectory(tempPath);
         return tempPath;
       case 3:
-        tempPath = $"{Application.streamingAssetsPath}/blue_planter";
+        tempPath = $"{GrpcInputManager.DATAPATH}/blue_planter";
         Directory.CreateDirectory(tempPath);
         return tempPath;
       case 4:
-        tempPath = $"{Application.streamingAssetsPath}/blue_harvester";
+        tempPath = $"{GrpcInputManager.DATAPATH}/blue_harvester";
         Directory.CreateDirectory(tempPath);
         return tempPath;
       case 5:
-        tempPath = $"{Application.streamingAssetsPath}/blue_worm";
+        tempPath = $"{GrpcInputManager.DATAPATH}/blue_worm";
         Directory.CreateDirectory(tempPath);
         return tempPath;
       default:
@@ -119,7 +126,8 @@ public class InputPanel : MonoBehaviour
 
   private void ShowFileStatus(int index)
   {
-    characterBrowseButtons[index].sprite = changeButtonSprite;
+    characterBrowseButtons[index].gameObject.SetActive(false);
+    characterRemoveButtons[index].gameObject.SetActive(true);
     characterStatus[index].sprite = readyStatusSprite;
   }
 
@@ -141,6 +149,11 @@ public class InputPanel : MonoBehaviour
   public void OnLoadAIFolderButtonClick(int index)
   {
     OpenFileBrowser(index);
+  }
+
+  public void OnRemoveButtonClick(int index)
+  {
+    RemoveAIDirectory(index);
   }
 
   public void OnPlayButtonClick()

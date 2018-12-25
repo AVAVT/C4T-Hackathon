@@ -24,7 +24,7 @@ public class SettingPanel : MonoBehaviour
 
     if (PlayerPrefs.GetInt("HaveConfig", 0) == 0)
     {
-      PlayerPrefs.SetString("SaveLogPath", $"{Application.streamingAssetsPath}/logs");
+      PlayerPrefs.SetString("SaveLogPath", $"{GrpcInputManager.DATAPATH}/logs");
       saveLogPathText.text = PlayerPrefs.GetString("SaveLogPath");
       var pythonPath = GetPythonPathFromEnvironment();
       if (pythonPath != "")
@@ -82,7 +82,7 @@ public class SettingPanel : MonoBehaviour
 
   private void ChooseLogPathBrowser()
   {
-    var path = FileBrowser.OpenSingleFolder("Choose directory to save your log files!", $"{Application.streamingAssetsPath}/logs");
+    var path = FileBrowser.OpenSingleFolder("Choose directory to save your log files!", $"{GrpcInputManager.DATAPATH}/logs");
     if (!String.IsNullOrEmpty(path))
     {
       saveLogPathText.text = path;
