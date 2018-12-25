@@ -12,7 +12,6 @@ public class LoadingPanel : MonoBehaviour
   [SerializeField] private TMP_Text loadingProcessText;
   [SerializeField] private TMP_Text tipsText;
   [SerializeField] private string[] tips;
-
   [SerializeField] private GameObject recordErrorPanel;
   [SerializeField] private TMP_Text outputText;
 

@@ -16,23 +16,16 @@ public class SetupSceneManager : MonoBehaviour
   [SerializeField] private TMPro.TMP_Text errorText;
   [SerializeField] private LoadingPanel loadingPanel;
 
-  private string dataPath;
   void Start()
   {
 #if UNITY_EDITOR
     PlayerPrefs.DeleteAll();
 #endif
 
-    if (!Directory.Exists($"{Application.persistentDataPath}/PythonData"))
-      Directory.CreateDirectory($"{Application.persistentDataPath}/PythonData");
-
-    dataPath = $"{Application.persistentDataPath}/PythonData";
     btnSave.interactable = false;
-
 
     if (PlayerPrefs.GetInt("HaveConfig", 0) == 0)
     {
-      PlayerPrefs.SetString("SaveLogPath", $"{dataPath}/logs");
       var pythonPath = GetPythonPathFromEnvironment();
       if (pythonPath != "")
       {
@@ -69,6 +62,7 @@ public class SetupSceneManager : MonoBehaviour
     }
     return "";
   }
+  
 
   private void ChoosePythonBrowser()
   {
@@ -97,6 +91,10 @@ public class SetupSceneManager : MonoBehaviour
       PlayerPrefs.SetString("RootFolderPath", path);
       errorText.text = "Setup root folder successfully!";
       errorText.gameObject.SetActive(true);
+      if(!Directory.Exists($"{path}/logs"))
+        Directory.CreateDirectory($"{path}/logs");
+      PlayerPrefs.SetString("SaveLogPath", $"{path}/logs");
+
       ValidateFields();
     }
     else
@@ -119,6 +117,8 @@ public class SetupSceneManager : MonoBehaviour
 
   public void OnButtonSaveClick()
   {
+
+
     PlayerPrefs.SetInt("HaveConfig", 1);
     StartCoroutine(loadingPanel.StartLoadingScene("InputScene"));
   }

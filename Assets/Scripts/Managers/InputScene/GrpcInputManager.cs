@@ -35,16 +35,10 @@ public class GrpcInputManager : MonoBehaviour
   //map
   private int currentMap = 0;
 
-  void Awake()
+  void Start()
   {
-    DATAPATH = PlayerPrefs.GetString("RootFolderPath", $"{Application.persistentDataPath}/PythonData");
+    DATAPATH = PlayerPrefs.GetString("RootFolderPath");
     PROTOTYPEDATAPATH = $"{Application.streamingAssetsPath}";
-
-    if (System.IO.Directory.Exists(DATAPATH))
-    {
-      Directory.CreateDirectory(DATAPATH);
-      CopyAllDirectory(PROTOTYPEDATAPATH, DATAPATH);
-    }
 
     gameRule = GameConfig.DefaultGameRule();
     foreach (var team in gameRule.availableTeams)
@@ -54,10 +48,7 @@ public class GrpcInputManager : MonoBehaviour
         isBot.SetItem(team, role, true);
       }
     }
-  }
 
-  void Start()
-  {
     uiManager.ChangeMap = ChangeMap;
     uiManager.SetIsBot = SetIsBot;
     uiManager.StartGame = StartGame;
@@ -140,7 +131,9 @@ public class GrpcInputManager : MonoBehaviour
     string botNoti = ShowBot();
     if (NeedStartServer())
     {
+      CopyAllDirectory(PROTOTYPEDATAPATH, DATAPATH);
       var pythonPath = PlayerPrefs.GetString("PythonPath");
+
       if (!String.IsNullOrEmpty(pythonPath))
       {
         var serverPath = $"{DATAPATH}/ai_server.py";
