@@ -57,7 +57,7 @@ public class InputPanel : MonoBehaviour
       CopyAllDirectory(path, copyPath);
       ShowNotiPanel?.Invoke($"Import folder containing main.py successfully!", 2, 1);
       ShowFileStatus(index);
-      SetIsBot?.Invoke(index, true);
+      SetIsBot?.Invoke(index, false);
     }
     else
     {
@@ -70,7 +70,7 @@ public class InputPanel : MonoBehaviour
     characterRemoveButtons[index].gameObject.SetActive(false);
     characterBrowseButtons[index].gameObject.SetActive(true);
     characterStatus[index].sprite = unreadyStatusSprite;
-    SetIsBot?.Invoke(index, false);
+    SetIsBot?.Invoke(index, true);
   }
 
   private void CopyAllDirectory(string sourceDir, string targetDir)
