@@ -133,6 +133,7 @@ public class GrpcInputManager : MonoBehaviour
     {
       CopyAllDirectory(PROTOTYPEDATAPATH, DATAPATH);
       var pythonPath = PlayerPrefs.GetString("PythonPath");
+      UnityEngine.Debug.Log(pythonPath);
 
       if (!String.IsNullOrEmpty(pythonPath))
       {

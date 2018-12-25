@@ -30,6 +30,7 @@ public class PlayRecordPanel : MonoBehaviour
 
   public void OnLastRecordButtonClick()
   {
+    Debug.Log(PlayerPrefs.GetString("LogPath"));
     if (File.Exists(PlayerPrefs.GetString("LogPath")))
     {
       StartLoadingPlayScene?.Invoke();
